@@ -4,7 +4,7 @@ import it.permessi.rest.permessi.security.JwtAuthFilter;
 import it.permessi.rest.permessi.security.UserDetailsServiceImpl;
 
 import java.util.Arrays;
-
+//PROVA
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.*;
 import org.springframework.http.HttpMethod;
