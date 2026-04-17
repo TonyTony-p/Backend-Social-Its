@@ -8,7 +8,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-
+//commento.......
 /**
  * Entità Permesso: azione/autorità atomica.
  * Collegata ad un Gruppo (ManyToOne) e ad una lista di RuoloPermesso (OneToMany).
