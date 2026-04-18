@@ -1,5 +1,6 @@
 package it.permessi.rest.permessi.mapper;
 
+import it.permessi.rest.permessi.dto.AllegatoDto;
 import it.permessi.rest.permessi.dto.CommentoDto;
 import it.permessi.rest.permessi.dto.GruppoDto;
 import it.permessi.rest.permessi.dto.LikeDto;
@@ -9,6 +10,7 @@ import it.permessi.rest.permessi.dto.PostDto;
 import it.permessi.rest.permessi.dto.ProfiloDto;
 import it.permessi.rest.permessi.dto.RuoloDto;
 import it.permessi.rest.permessi.dto.UtenteDto;
+import it.permessi.rest.permessi.entity.Allegato;
 import it.permessi.rest.permessi.entity.Commento;
 import it.permessi.rest.permessi.entity.Gruppo;
 import it.permessi.rest.permessi.entity.Like;
@@ -170,6 +172,7 @@ public class DtoMapper {
     	UtenteDto dto = new UtenteDto();
     	dto.setNome(u.getNome());
     	dto.setCognome(u.getCognome());
+    	dto.setUsername(u.getUsername());
     	return dto;
     }
     
@@ -248,8 +251,24 @@ public class DtoMapper {
                 .map(DtoMapper::toLikeDtoMinimal)
                 .collect(Collectors.toList());
             dto.setLike(likeDtos);
+            dto.setNumeroLike(p.getLikes().size());
+        } else {
+            dto.setNumeroLike(0);
         }
 
+        if (p.getCommenti() != null && !p.getCommenti().isEmpty()) {
+            List<CommentoDto> commentiDtos = p.getCommenti().stream()
+                .map(DtoMapper::toCommentoDtoLight)
+                .collect(Collectors.toList());
+            dto.setCommenti(commentiDtos);
+        }
+
+        if (p.getAllegati() != null && !p.getAllegati().isEmpty()) {
+            List<AllegatoDto> allegatiDtos = p.getAllegati().stream()
+                .map(DtoMapper::toAllegatoDto)
+                .collect(Collectors.toList());
+            dto.setAllegati(allegatiDtos);
+        }
 
         return dto;
     }
@@ -333,8 +352,17 @@ public class DtoMapper {
         dto.setTesto(c.getTesto());
         dto.setDataOra(c.getDataOra());
         dto.setUtente(toUtenteDtoLight(c.getUtente()));
-        dto.setPost(toPostDtoLight(c.getPost()));
-        // Utente e Post non vengono settati per evitare loop
+        return dto;
+    }
+
+    public static AllegatoDto toAllegatoDto(Allegato a) {
+        if (a == null) return null;
+        AllegatoDto dto = new AllegatoDto();
+        dto.setId(a.getIdAllegato());
+        dto.setNomeOriginale(a.getNomeOriginale());
+        dto.setUrl(a.getUrl());
+        dto.setMimeType(a.getMimeType());
+        dto.setTipo(a.getTipo());
         return dto;
     }
 
