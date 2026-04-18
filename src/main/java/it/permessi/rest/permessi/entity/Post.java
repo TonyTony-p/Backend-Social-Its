@@ -39,6 +39,9 @@ public class Post {
     @OneToMany(mappedBy = "post", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Like> likes = new ArrayList<>();
 
+    @OneToMany(mappedBy = "post", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Allegato> allegati = new ArrayList<>();
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -104,6 +107,9 @@ public class Post {
     public void setLikes(List<Like> likes) {
         this.likes = likes;
     }
+
+    public List<Allegato> getAllegati() { return allegati; }
+    public void setAllegati(List<Allegato> allegati) { this.allegati = allegati; }
     
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
