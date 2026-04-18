@@ -6,6 +6,7 @@ import it.permessi.rest.permessi.dto.LikeDto;
 import it.permessi.rest.permessi.dto.PermessoDto;
 import it.permessi.rest.permessi.dto.PermessoRuoloDto;
 import it.permessi.rest.permessi.dto.PostDto;
+import it.permessi.rest.permessi.dto.ProfiloDto;
 import it.permessi.rest.permessi.dto.RuoloDto;
 import it.permessi.rest.permessi.dto.UtenteDto;
 import it.permessi.rest.permessi.entity.Commento;
@@ -238,6 +239,7 @@ public class DtoMapper {
         if (p.getUtente() != null) {
             dto.setIdUtente(p.getUtente().getId());
             dto.setNomeUtente(p.getUtente().getNome());
+            dto.setUsernameUtente(p.getUtente().getUsername());
         }
 
         // Mappa i like
@@ -262,6 +264,7 @@ public class DtoMapper {
 
         dto.setId(p.getIdPost());
         dto.setNomeUtente(p.getUtente().getNome());
+        dto.setUsernameUtente(p.getUtente().getUsername());
         dto.setContenuto(p.getContenuto());
         dto.setDataOra(p.getDataOra());           
             
@@ -282,6 +285,7 @@ public class DtoMapper {
        if (p.getUtente() != null) {
            dto.setIdUtente(p.getUtente().getId());
            dto.setNomeUtente(p.getUtente().getNome());
+           dto.setUsernameUtente(p.getUtente().getUsername());
        }
        
        // IMPOSTA SOLO IL NUMERO DI LIKE (non l'array completo)
@@ -299,6 +303,30 @@ public class DtoMapper {
     
     
     
+    public static ProfiloDto toProfiloDto(Utente u) {
+        if (u == null) return null;
+        ProfiloDto dto = new ProfiloDto();
+        dto.setId(u.getId());
+        dto.setNome(u.getNome());
+        dto.setCognome(u.getCognome());
+        dto.setUsername(u.getUsername());
+        dto.setBio(u.getBio());
+        dto.setFotoProfilo(u.getFotoProfilo());
+        dto.setMemberDal(u.getCreatedAt());
+
+        if (u.getPosts() != null) {
+            dto.setNumPost(u.getPosts().size());
+            int totaleLike = u.getPosts().stream()
+                .mapToInt(p -> p.getLikes() != null ? p.getLikes().size() : 0)
+                .sum();
+            dto.setNumLike(totaleLike);
+            dto.setPosts(u.getPosts().stream()
+                .map(DtoMapper::toPostDtoLight)
+                .collect(Collectors.toList()));
+        }
+        return dto;
+    }
+
     public static CommentoDto toCommentoDtoLight(Commento c) {
         CommentoDto dto = new CommentoDto();
         dto.setIdCommento(c.getIdCommento());

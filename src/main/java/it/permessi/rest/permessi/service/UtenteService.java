@@ -1,6 +1,8 @@
 package it.permessi.rest.permessi.service;
 
 import it.permessi.rest.permessi.dto.PageResponse;
+import it.permessi.rest.permessi.dto.ProfiloDto;
+import it.permessi.rest.permessi.dto.ProfiloFormDto;
 import it.permessi.rest.permessi.dto.UtenteFormDto;
 import it.permessi.rest.permessi.dto.UtenteDto;
 import it.permessi.rest.permessi.entity.Ruolo;
@@ -109,6 +111,29 @@ public class UtenteService {
     
     
     
+    /** Profilo pubblico di un utente per username (include post e stats). */
+    @Transactional(readOnly = true)
+    public ProfiloDto getProfilo(String username) {
+        return repo.findWithPostsByUsername(username)
+                .map(DtoMapper::toProfiloDto)
+                .orElseThrow(() -> new RuntimeException("Utente non trovato con username: " + username));
+    }
+
+    /** Aggiorna i campi modificabili del proprio profilo. */
+    @Transactional
+    public ProfiloDto updateMyProfilo(String username, ProfiloFormDto form) {
+        Utente u = repo.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Utente non trovato con username: " + username));
+        if (form.getNome() != null && !form.getNome().isBlank()) u.setNome(form.getNome());
+        if (form.getCognome() != null && !form.getCognome().isBlank()) u.setCognome(form.getCognome());
+        u.setBio(form.getBio());
+        u.setFotoProfilo(form.getFotoProfilo());
+        if (form.getDataNascita() != null) u.setDataNascita(form.getDataNascita());
+        if (form.getTelefono() != null) u.setTelefono(form.getTelefono());
+        if (form.getIndirizzo() != null) u.setIndirizzo(form.getIndirizzo());
+        return DtoMapper.toProfiloDto(repo.save(u));
+    }
+
     /** Copia campi dal form, gestendo password e ruolo. */
     private void apply(Utente u, UtenteFormDto form, boolean encodePasswordAlways) {
         u.setNome(form.getNome());

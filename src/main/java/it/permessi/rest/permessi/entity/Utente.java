@@ -43,8 +43,14 @@ public class Utente {
     @Pattern(regexp = "^[0-9+\\s()-]{7,15}$", message = "Formato telefono non valido")
     @Column(length = 15)
     private String telefono;
-    
+
     private String indirizzo;
+
+    @Column(length = 160)
+    private String bio;
+
+    @Column(name = "foto_profilo")
+    private String fotoProfilo;
 
     /** Ruolo assegnato all'utente. */
     @ManyToOne(fetch = FetchType.LAZY)
@@ -136,14 +142,30 @@ public class Utente {
         this.telefono = telefono; 
     }
     
-    public String getIndirizzo() { 
-        return indirizzo; 
+    public String getIndirizzo() {
+        return indirizzo;
     }
-    
-    public void setIndirizzo(String indirizzo) { 
-        this.indirizzo = indirizzo; 
+
+    public void setIndirizzo(String indirizzo) {
+        this.indirizzo = indirizzo;
     }
-    
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getFotoProfilo() {
+        return fotoProfilo;
+    }
+
+    public void setFotoProfilo(String fotoProfilo) {
+        this.fotoProfilo = fotoProfilo;
+    }
+
     public Ruolo getRuolo() { 
         return ruolo; 
     }
