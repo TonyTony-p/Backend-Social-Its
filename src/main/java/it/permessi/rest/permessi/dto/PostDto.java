@@ -15,9 +15,10 @@ public class PostDto {
 	private List <LikeDto> like;
 	private Integer numeroLike;
 	private List<AllegatoDto> allegati;
+	private SondaggioDto sondaggio;
 
-    
-    
+
+
 	public Long getId() {
 		return id;
 	}
@@ -80,4 +81,6 @@ public class PostDto {
 
     public List<AllegatoDto> getAllegati() { return allegati; }
     public void setAllegati(List<AllegatoDto> allegati) { this.allegati = allegati; }
+    public SondaggioDto getSondaggio() { return sondaggio; }
+    public void setSondaggio(SondaggioDto sondaggio) { this.sondaggio = sondaggio; }
 }

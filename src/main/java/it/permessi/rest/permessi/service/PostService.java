@@ -27,6 +27,7 @@ import it.permessi.rest.permessi.mapper.DtoMapper;
 import it.permessi.rest.permessi.repository.AllegatoRepository;
 import it.permessi.rest.permessi.repository.PostRepository;
 import it.permessi.rest.permessi.repository.UtenteRepository;
+import it.permessi.rest.permessi.repository.VotoRepository;
 import jakarta.persistence.EntityNotFoundException;
 
 @Service
@@ -50,9 +51,12 @@ public class PostService {
     @Autowired PostRepository postRepo;
     @Autowired UtenteRepository utenteRepo;
     @Autowired AllegatoRepository allegatoRepo;
+    @Autowired SegueService segueService;
+    @Autowired VotoRepository votoRepo;
+    @Autowired SondaggioService sondaggioService;
 
     @Transactional
-    public PostDto create(String contenuto, MultipartFile[] files, String username) {
+    public PostDto create(String contenuto, MultipartFile[] files, String sondaggioJson, String username) {
         if (contenuto == null || contenuto.isBlank())
             throw new IllegalArgumentException("Il contenuto non può essere vuoto");
         if (contenuto.length() > 1000)
@@ -71,15 +75,51 @@ public class PostService {
             savedPost.setAllegati(allegati);
         }
 
-        return DtoMapper.toPostDtoComplete(savedPost);
+        if (sondaggioJson != null && !sondaggioJson.isBlank()) {
+            parsaECreaSondaggio(sondaggioJson, savedPost);
+        }
+
+        Post reloaded = postRepo.findById(savedPost.getIdPost()).orElse(savedPost);
+        PostDto dto = DtoMapper.toPostDtoComplete(reloaded);
+        if (reloaded.getSondaggio() != null) {
+            dto.setSondaggio(DtoMapper.toSondaggioDto(reloaded.getSondaggio(), null));
+        }
+        return dto;
     }
 
     @Transactional(readOnly = true)
-    public List<PostDto> listAll() {
-        List<Post> posts = postRepo.findAll();
-        return posts.stream()
-                .map(DtoMapper::toPostDtoComplete)
+    public List<PostDto> listAll(String username, int page, int size) {
+        Pageable pageable = PageRequest.of(page, Math.min(size, 50));
+        return postRepo.findAllByOrderByDataOraDesc(pageable).stream()
+                .map(p -> enrichWithSondaggio(p, username))
                 .collect(Collectors.toList());
+    }
+
+    private PostDto enrichWithSondaggio(Post p, String username) {
+        PostDto dto = DtoMapper.toPostDtoComplete(p);
+        if (p.getSondaggio() != null) {
+            Long idVotato = username != null
+                    ? votoRepo.findIdOpzioneByUsernameAndSondaggioId(username, p.getSondaggio().getIdSondaggio())
+                    : null;
+            dto.setSondaggio(DtoMapper.toSondaggioDto(p.getSondaggio(), idVotato));
+        }
+        return dto;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void parsaECreaSondaggio(String json, Post post) {
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            java.util.Map<String, Object> data = mapper.readValue(json, java.util.Map.class);
+            String domanda = (String) data.get("domanda");
+            java.util.List<String> opzioni = (java.util.List<String>) data.get("opzioni");
+            Integer durata = data.get("durataGiorni") != null ? (Integer) data.get("durataGiorni") : null;
+            if (domanda != null && !domanda.isBlank() && opzioni != null && opzioni.size() >= 2) {
+                sondaggioService.crea(post, domanda, opzioni, durata);
+            }
+        } catch (Exception e) {
+            // invalid poll data, skip silently
+        }
     }
 
     @Transactional
@@ -133,6 +173,15 @@ public class PostService {
             throw new EntityNotFoundException("Utente non trovato con id: " + idUtente);
         return postRepo.findByUtenteId(idUtente).stream()
                 .map(DtoMapper::toPostDtoComplete)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostDto> getPostDaSeguiti(String username) {
+        List<String> usernames = segueService.getSeguitiUsernames(username);
+        if (usernames.isEmpty()) return List.of();
+        return postRepo.findByUtenteUsernameIn(usernames).stream()
+                .map(p -> enrichWithSondaggio(p, username))
                 .collect(Collectors.toList());
     }
 
