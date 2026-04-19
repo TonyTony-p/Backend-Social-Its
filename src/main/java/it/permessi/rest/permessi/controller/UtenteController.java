@@ -90,8 +90,11 @@ public class UtenteController {
 
     /** Profilo pubblico di un utente (per username). */
     @GetMapping("/profilo/{username}")
-    public ResponseEntity<ProfiloDto> getProfilo(@PathVariable String username) {
-        return ResponseEntity.ok(service.getProfilo(username));
+    public ResponseEntity<ProfiloDto> getProfilo(
+            @PathVariable String username,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        String currentUsername = userDetails != null ? userDetails.getUsername() : null;
+        return ResponseEntity.ok(service.getProfilo(username, currentUsername));
     }
 
     /** Aggiorna il proprio profilo (bio, foto, dati personali). */

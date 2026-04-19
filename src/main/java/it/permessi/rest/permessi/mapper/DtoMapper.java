@@ -4,20 +4,24 @@ import it.permessi.rest.permessi.dto.AllegatoDto;
 import it.permessi.rest.permessi.dto.CommentoDto;
 import it.permessi.rest.permessi.dto.GruppoDto;
 import it.permessi.rest.permessi.dto.LikeDto;
+import it.permessi.rest.permessi.dto.OpzioneDto;
 import it.permessi.rest.permessi.dto.PermessoDto;
 import it.permessi.rest.permessi.dto.PermessoRuoloDto;
 import it.permessi.rest.permessi.dto.PostDto;
 import it.permessi.rest.permessi.dto.ProfiloDto;
 import it.permessi.rest.permessi.dto.RuoloDto;
+import it.permessi.rest.permessi.dto.SondaggioDto;
 import it.permessi.rest.permessi.dto.UtenteDto;
 import it.permessi.rest.permessi.entity.Allegato;
 import it.permessi.rest.permessi.entity.Commento;
 import it.permessi.rest.permessi.entity.Gruppo;
 import it.permessi.rest.permessi.entity.Like;
+import it.permessi.rest.permessi.entity.OpzioneSondaggio;
 import it.permessi.rest.permessi.entity.Permesso;
 import it.permessi.rest.permessi.entity.Post;
 import it.permessi.rest.permessi.entity.Ruolo;
 import it.permessi.rest.permessi.entity.RuoloPermesso;
+import it.permessi.rest.permessi.entity.Sondaggio;
 import it.permessi.rest.permessi.entity.Utente;
 
 import java.util.List;
@@ -270,6 +274,36 @@ public class DtoMapper {
             dto.setAllegati(allegatiDtos);
         }
 
+        return dto;
+    }
+
+    public static SondaggioDto toSondaggioDto(Sondaggio s, Long idOpzioneVotata) {
+        if (s == null) return null;
+        SondaggioDto dto = new SondaggioDto();
+        dto.setIdSondaggio(s.getIdSondaggio());
+        dto.setDomanda(s.getDomanda());
+        if (s.getScadenza() != null) dto.setScadenza(s.getScadenza().toString());
+        dto.setScaduto(s.isScaduto());
+        dto.setIdOpzioneVotata(idOpzioneVotata);
+        if (s.getOpzioni() != null) {
+            int totale = s.getOpzioni().stream()
+                .mapToInt(o -> o.getVoti() != null ? o.getVoti().size() : 0).sum();
+            dto.setTotaleVoti(totale);
+            dto.setOpzioni(s.getOpzioni().stream()
+                .map(o -> toOpzioneDto(o, totale))
+                .collect(Collectors.toList()));
+        }
+        return dto;
+    }
+
+    public static OpzioneDto toOpzioneDto(OpzioneSondaggio o, int totale) {
+        if (o == null) return null;
+        OpzioneDto dto = new OpzioneDto();
+        dto.setIdOpzione(o.getIdOpzione());
+        dto.setTesto(o.getTesto());
+        int numVoti = o.getVoti() != null ? o.getVoti().size() : 0;
+        dto.setNumVoti(numVoti);
+        dto.setPercentuale(totale > 0 ? (int) Math.round((double) numVoti / totale * 100) : 0);
         return dto;
     }
     

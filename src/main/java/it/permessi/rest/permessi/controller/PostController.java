@@ -36,14 +36,19 @@ public class PostController {
     public ResponseEntity<PostDto> creaPost(
             @RequestPart("contenuto") String contenuto,
             @RequestPart(value = "files", required = false) MultipartFile[] files,
+            @RequestPart(value = "sondaggioJson", required = false) String sondaggioJson,
             @AuthenticationPrincipal UserDetails userDetails) {
-        var created = service.create(contenuto, files, userDetails.getUsername());
+        var created = service.create(contenuto, files, sondaggioJson, userDetails.getUsername());
         return ResponseEntity.status(201).body(created);
     }
 
     @GetMapping
-    public ResponseEntity<List<PostDto>> listaPosts() {
-        var posts = service.listAll();
+    public ResponseEntity<List<PostDto>> listaPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        String username = userDetails != null ? userDetails.getUsername() : null;
+        var posts = service.listAll(username, page, size);
         return ResponseEntity.ok(posts);
     }
 
@@ -77,6 +82,13 @@ public class PostController {
     public ResponseEntity<List<PostDto>> getTendenze(
             @RequestParam(defaultValue = "10") int limit) {
         var posts = service.getTendenze(limit);
+        return ResponseEntity.ok(posts);
+    }
+
+    @GetMapping("/seguiti")
+    public ResponseEntity<List<PostDto>> getPostDaSeguiti(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        var posts = service.getPostDaSeguiti(userDetails.getUsername());
         return ResponseEntity.ok(posts);
     }
 }

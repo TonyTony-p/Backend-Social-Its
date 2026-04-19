@@ -13,6 +13,9 @@ public class ProfiloDto {
     private String fotoProfilo;
     private int numPost;
     private int numLike;
+    private int numSeguaci;
+    private int numSeguiti;
+    private boolean seguito;
     private List<PostDto> posts;
     private Instant memberDal;
 
@@ -32,6 +35,12 @@ public class ProfiloDto {
     public void setNumPost(int numPost) { this.numPost = numPost; }
     public int getNumLike() { return numLike; }
     public void setNumLike(int numLike) { this.numLike = numLike; }
+    public int getNumSeguaci() { return numSeguaci; }
+    public void setNumSeguaci(int numSeguaci) { this.numSeguaci = numSeguaci; }
+    public int getNumSeguiti() { return numSeguiti; }
+    public void setNumSeguiti(int numSeguiti) { this.numSeguiti = numSeguiti; }
+    public boolean isSeguito() { return seguito; }
+    public void setSeguito(boolean seguito) { this.seguito = seguito; }
     public List<PostDto> getPosts() { return posts; }
     public void setPosts(List<PostDto> posts) { this.posts = posts; }
     public Instant getMemberDal() { return memberDal; }
