@@ -127,6 +127,15 @@ public class UtenteService {
         return dto;
     }
 
+    /** Ricerca profili per prefisso username (max 10 risultati). */
+    @Transactional(readOnly = true)
+    public List<ProfiloDto> searchProfiles(String q) {
+        return repo.searchByUsername(q.trim()).stream()
+                .limit(10)
+                .map(DtoMapper::toProfiloDto)
+                .collect(Collectors.toList());
+    }
+
     /** Aggiorna i campi modificabili del proprio profilo. */
     @Transactional
     public ProfiloDto updateMyProfilo(String username, ProfiloFormDto form) {
