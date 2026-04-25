@@ -97,6 +97,12 @@ public class UtenteController {
         return ResponseEntity.ok(service.getProfilo(username, currentUsername));
     }
 
+    /** Ricerca profili per prefisso username. */
+    @GetMapping("/search")
+    public ResponseEntity<List<ProfiloDto>> search(@RequestParam("q") String q) {
+        return ResponseEntity.ok(service.searchProfiles(q));
+    }
+
     /** Aggiorna il proprio profilo (bio, foto, dati personali). */
     @PutMapping("/my-profile")
     public ResponseEntity<ProfiloDto> updateMyProfilo(
