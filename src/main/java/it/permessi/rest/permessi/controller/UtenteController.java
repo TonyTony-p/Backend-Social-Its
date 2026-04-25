@@ -2,6 +2,8 @@ package it.permessi.rest.permessi.controller;
 
 import it.permessi.rest.permessi.dto.PageResponse;
 import it.permessi.rest.permessi.dto.IdRequest;
+import it.permessi.rest.permessi.dto.ProfiloDto;
+import it.permessi.rest.permessi.dto.ProfiloFormDto;
 import it.permessi.rest.permessi.dto.UtenteFormDto;
 import it.permessi.rest.permessi.dto.UtenteDto;
 import it.permessi.rest.permessi.service.UtenteService;
@@ -84,5 +86,28 @@ public class UtenteController {
     @PreAuthorize("hasAuthority('UTENTE_READ')")
     public List<UtenteDto> listAll() {
         return service.listAll();
+    }
+
+    /** Profilo pubblico di un utente (per username). */
+    @GetMapping("/profilo/{username}")
+    public ResponseEntity<ProfiloDto> getProfilo(
+            @PathVariable String username,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        String currentUsername = userDetails != null ? userDetails.getUsername() : null;
+        return ResponseEntity.ok(service.getProfilo(username, currentUsername));
+    }
+
+    /** Ricerca profili per prefisso username. */
+    @GetMapping("/search")
+    public ResponseEntity<List<ProfiloDto>> search(@RequestParam("q") String q) {
+        return ResponseEntity.ok(service.searchProfiles(q));
+    }
+
+    /** Aggiorna il proprio profilo (bio, foto, dati personali). */
+    @PutMapping("/my-profile")
+    public ResponseEntity<ProfiloDto> updateMyProfilo(
+            @Valid @RequestBody ProfiloFormDto form,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(service.updateMyProfilo(userDetails.getUsername(), form));
     }
 }

@@ -4,7 +4,7 @@ import it.permessi.rest.permessi.security.JwtAuthFilter;
 import it.permessi.rest.permessi.security.UserDetailsServiceImpl;
 
 import java.util.Arrays;
-
+//PROVA
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.*;
 import org.springframework.http.HttpMethod;
@@ -69,6 +69,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/utenti/*/con-post").permitAll() // ✅ Rende pubblico l'endpoint
                 .requestMatchers("/api/likes/post/**").permitAll() // ✅ Se vuoi anche i like pubblic
                 .requestMatchers(HttpMethod.GET, "/api/post").permitAll()
+                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                 .anyRequest().authenticated()
             );
         http.addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class);
