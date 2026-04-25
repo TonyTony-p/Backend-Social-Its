@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -33,6 +34,7 @@ public class PostController {
     @Autowired PostService service;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('POST_CREATE')")
     public ResponseEntity<PostDto> creaPost(
             @RequestPart("contenuto") String contenuto,
             @RequestPart(value = "files", required = false) MultipartFile[] files,
@@ -53,6 +55,7 @@ public class PostController {
     }
 
     @PutMapping
+    @PreAuthorize("hasAuthority('POST_UPDATE')")
     public ResponseEntity<PostDto> update(@RequestBody @Valid PostFormDto form,
                                           @AuthenticationPrincipal UserDetails userDetails) {
         var update = service.update(form, userDetails);
@@ -60,6 +63,7 @@ public class PostController {
     }
 
     @DeleteMapping("/elimina/{id}")
+    @PreAuthorize("hasAuthority('POST_DELETE')")
     public ResponseEntity<Void> elimina(@PathVariable Long id,
                                         @AuthenticationPrincipal UserDetails userDetails) {
         service.delete(id, userDetails);
@@ -86,6 +90,7 @@ public class PostController {
     }
 
     @GetMapping("/seguiti")
+    @PreAuthorize("hasAuthority('POST_READ')")
     public ResponseEntity<List<PostDto>> getPostDaSeguiti(
             @AuthenticationPrincipal UserDetails userDetails) {
         var posts = service.getPostDaSeguiti(userDetails.getUsername());
