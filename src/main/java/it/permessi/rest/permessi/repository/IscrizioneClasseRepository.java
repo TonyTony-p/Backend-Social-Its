@@ -12,4 +12,5 @@ public interface IscrizioneClasseRepository extends JpaRepository<IscrizioneClas
     Optional<IscrizioneClasse> findByStudente_UsernameAndClasse_Id(String username, Long classeId);
     boolean existsByStudente_UsernameAndClasse_Id(String username, Long classeId);
     long countByClasse_IdAndStato(Long classeId, IscrizioneClasse.StatoIscrizione stato);
+    List<IscrizioneClasse> findByClasse_IdAndStato(Long classeId, IscrizioneClasse.StatoIscrizione stato);
 }

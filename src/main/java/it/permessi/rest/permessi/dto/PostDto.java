@@ -9,6 +9,7 @@ public class PostDto {
 	private Long idUtente;
 	private String nomeUtente;
 	private String usernameUtente;
+	private String ruoloUtente;
 	private LocalDateTime dataOra;
 	private String contenuto;
 	private List <CommentoDto> commenti;
@@ -83,4 +84,6 @@ public class PostDto {
     public void setAllegati(List<AllegatoDto> allegati) { this.allegati = allegati; }
     public SondaggioDto getSondaggio() { return sondaggio; }
     public void setSondaggio(SondaggioDto sondaggio) { this.sondaggio = sondaggio; }
+    public String getRuoloUtente() { return ruoloUtente; }
+    public void setRuoloUtente(String ruoloUtente) { this.ruoloUtente = ruoloUtente; }
 }
