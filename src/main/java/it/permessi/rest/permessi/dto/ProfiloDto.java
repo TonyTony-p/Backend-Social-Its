@@ -18,6 +18,7 @@ public class ProfiloDto {
     private boolean seguito;
     private List<PostDto> posts;
     private Instant memberDal;
+    private String ruolo;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -45,4 +46,6 @@ public class ProfiloDto {
     public void setPosts(List<PostDto> posts) { this.posts = posts; }
     public Instant getMemberDal() { return memberDal; }
     public void setMemberDal(Instant memberDal) { this.memberDal = memberDal; }
+    public String getRuolo() { return ruolo; }
+    public void setRuolo(String ruolo) { this.ruolo = ruolo; }
 }

@@ -42,7 +42,7 @@ public class ClasseCorsoService {
 
     @Transactional(readOnly = true)
     public Page<ClasseCorsoDto> listaClassiPubbliche(Pageable pageable) {
-        return classeRepo.findByTipo(TipoClasse.PUBBLICA, pageable).map(this::toDtoLight);
+        return classeRepo.findByTipo(TipoClasse.PUBBLICA, pageable).map(this::toDto);
     }
 
     @Transactional(readOnly = true)
@@ -105,6 +105,13 @@ public class ClasseCorsoService {
     public List<IscrizioneClasseDto> listaIscrizioni(Long classeId, String professorUsername) {
         verificaProprieta(findClasseOrThrow(classeId), professorUsername);
         return iscrizioneRepo.findByClasse_Id(classeId).stream()
+                .map(this::toIscrizioneDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<IscrizioneClasseDto> listaStudentiApprovati(Long classeId) {
+        return iscrizioneRepo.findByClasse_IdAndStato(classeId, StatoIscrizione.APPROVATA).stream()
                 .map(this::toIscrizioneDto)
                 .collect(Collectors.toList());
     }
@@ -324,6 +331,9 @@ public class ClasseCorsoService {
         dto.setId(i.getId());
         dto.setClasseId(i.getClasse().getId());
         dto.setClasseNome(i.getClasse().getNome());
+        if (i.getClasse().getProfessore() != null) {
+            dto.setProfessoreNome(i.getClasse().getProfessore().getNome() + " " + i.getClasse().getProfessore().getCognome());
+        }
         dto.setStudenteUsername(i.getStudente().getUsername());
         dto.setStudenteNome(i.getStudente().getNome() + " " + i.getStudente().getCognome());
         dto.setStato(i.getStato());

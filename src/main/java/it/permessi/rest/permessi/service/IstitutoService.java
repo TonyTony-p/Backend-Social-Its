@@ -1,5 +1,6 @@
 package it.permessi.rest.permessi.service;
 
+import it.permessi.rest.permessi.dto.AggiornaProfessoreRequest;
 import it.permessi.rest.permessi.dto.CreaProfessoreRequest;
 import it.permessi.rest.permessi.dto.UtenteDto;
 import it.permessi.rest.permessi.entity.Ruolo;
@@ -58,6 +59,20 @@ public class IstitutoService {
                 .filter(u -> ruoloProfessore.equals(u.getRuolo()))
                 .map(DtoMapper::toUtenteDto)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public UtenteDto aggiornaProfessore(Long id, AggiornaProfessoreRequest req) {
+        Utente utente = utenteRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Professore non trovato"));
+        utente.setNome(req.getNome());
+        utente.setCognome(req.getCognome());
+        utente.setEmail(req.getEmail());
+        utente.setUsername(req.getUsername());
+        if (req.getPassword() != null && !req.getPassword().isBlank()) {
+            utente.setPassword(passwordEncoder.encode(req.getPassword()));
+        }
+        return DtoMapper.toUtenteDto(utenteRepo.save(utente));
     }
 
     private String generaUsername(String nome, String cognome) {
