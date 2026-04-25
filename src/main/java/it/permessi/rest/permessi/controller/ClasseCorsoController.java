@@ -60,7 +60,7 @@ public class ClasseCorsoController {
     }
 
     @GetMapping("/mie")
-    @PreAuthorize("hasRole('PROFESSORE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('PROFESSORE') or hasAuthority('ADMIN')")
     public ResponseEntity<List<ClasseCorsoDto>> mieClassi(
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(service.mieclassi(userDetails.getUsername()));
@@ -84,8 +84,14 @@ public class ClasseCorsoController {
         return ResponseEntity.status(201).body(service.iscrivitiConCodice(codice, userDetails.getUsername()));
     }
 
+    @GetMapping("/{id}/studenti")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<IscrizioneClasseDto>> listaStudenti(@PathVariable Long id) {
+        return ResponseEntity.ok(service.listaStudentiApprovati(id));
+    }
+
     @GetMapping("/{id}/iscrizioni")
-    @PreAuthorize("hasAuthority('ISCRIZIONE_READ')")
+    @PreAuthorize("hasAuthority('PROFESSORE') or hasAuthority('ADMIN') or hasAuthority('ISCRIZIONE_READ')")
     public ResponseEntity<List<IscrizioneClasseDto>> listaIscrizioni(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -93,7 +99,7 @@ public class ClasseCorsoController {
     }
 
     @PutMapping("/{id}/iscrizioni/{iscrizioneId}")
-    @PreAuthorize("hasAuthority('ISCRIZIONE_UPDATE')")
+    @PreAuthorize("hasAuthority('PROFESSORE') or hasAuthority('ADMIN') or hasAuthority('ISCRIZIONE_UPDATE')")
     public ResponseEntity<IscrizioneClasseDto> aggiornaIscrizione(
             @PathVariable Long id,
             @PathVariable Long iscrizioneId,

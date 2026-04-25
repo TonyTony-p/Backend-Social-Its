@@ -7,6 +7,7 @@ public class IscrizioneClasseDto {
     private Long id;
     private Long classeId;
     private String classeNome;
+    private String professoreNome;
     private String studenteUsername;
     private String studenteNome;
     private StatoIscrizione stato;
@@ -19,6 +20,8 @@ public class IscrizioneClasseDto {
     public void setClasseId(Long classeId) { this.classeId = classeId; }
     public String getClasseNome() { return classeNome; }
     public void setClasseNome(String classeNome) { this.classeNome = classeNome; }
+    public String getProfessoreNome() { return professoreNome; }
+    public void setProfessoreNome(String professoreNome) { this.professoreNome = professoreNome; }
     public String getStudenteUsername() { return studenteUsername; }
     public void setStudenteUsername(String studenteUsername) { this.studenteUsername = studenteUsername; }
     public String getStudenteNome() { return studenteNome; }
