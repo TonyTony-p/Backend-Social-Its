@@ -22,7 +22,7 @@ public class RuoloController {
 
     /** Crea ruolo. */
     @PostMapping
-    //@PreAuthorize("hasAuthority('RUOLO_CREATE')")
+    @PreAuthorize("hasAuthority('RUOLO_CREATE')")
     public RuoloDto create(@Valid @RequestBody RuoloFormDto form) {
         return service.create(form);
     }
