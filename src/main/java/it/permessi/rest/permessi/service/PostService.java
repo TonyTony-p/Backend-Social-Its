@@ -1,145 +1,241 @@
 package it.permessi.rest.permessi.service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import it.permessi.rest.permessi.dto.PostDto;
 import it.permessi.rest.permessi.dto.PostFormDto;
+import it.permessi.rest.permessi.entity.Allegato;
 import it.permessi.rest.permessi.entity.Post;
 import it.permessi.rest.permessi.entity.Utente;
 import it.permessi.rest.permessi.mapper.DtoMapper;
+import it.permessi.rest.permessi.repository.AllegatoRepository;
 import it.permessi.rest.permessi.repository.PostRepository;
 import it.permessi.rest.permessi.repository.UtenteRepository;
+import it.permessi.rest.permessi.repository.VotoRepository;
 import jakarta.persistence.EntityNotFoundException;
-
-
-
-//da aggiungere i pageable
 
 @Service
 public class PostService {
-	
-	@Autowired PostRepository postRepo;
-	@Autowired UtenteRepository utenteRepo;
 
-	public PostDto create(PostFormDto dto, String username) {
-	    
-	    // Recupera l'utente tramite username (email) dal token
-	    Utente u = utenteRepo.findByUsername(username)
-	            .orElseThrow(() -> new IllegalArgumentException("Utente non trovato: " + username));
-	    
-	    Post p = new Post();
-	    p.setContenuto(dto.getContenuto());
-	    p.setUtente(u);
-	    
-	    Post savedPost = postRepo.save(p);
-	    
-	    return DtoMapper.toPostDtoLight(savedPost);
-	}
-	
-	
-	public List<PostDto> listAll() {//da aggiungere pageable
-	    List<Post> posts = postRepo.findAll();
-	    
-	    return posts.stream()
-	            .map(DtoMapper::toPostDtoComplete)
-	            .collect(Collectors.toList());
-	}
-	
-	@Transactional
-	public PostDto update(PostFormDto form, UserDetails userDetails) {
-	    // Validazione input
-	    if (form.getId() == null) {
-	        throw new IllegalArgumentException("Id post obbligatorio per update");
-	    }
+    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+    private static final List<String> ALLOWED_MIME_TYPES = List.of(
+        "image/jpeg", "image/png", "image/gif", "image/webp",
+        "application/pdf", "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "text/plain"
+    );
 
-	    if (form.getContenuto() != null && form.getContenuto().trim().length() > 1000) {
-	        throw new IllegalArgumentException("Il contenuto non può superare 1000 caratteri");
-	    }
+    @Value("${app.upload.dir:uploads}")
+    private String uploadDir;
 
-	    // Verifica esistenza post e proprietà
-	    Post existingPost = postRepo.findById(form.getId())
-	        .orElseThrow(() -> new EntityNotFoundException("Post non trovato con id: " + form.getId()));
-
-	    // Verifica che l'utente sia il proprietario del post
-	    if (!existingPost.getUtente().getUsername().equals(userDetails.getUsername())) {
-	        throw new SecurityException("Non sei autorizzato a modificare questo post");
-	    }
-
-	    // Aggiornamento
-	    if (form.getContenuto() != null && !form.getContenuto().trim().isEmpty()) {
-	        existingPost.setContenuto(form.getContenuto().trim());
-	    }
-
-	    Post updatedPost = postRepo.save(existingPost);
-	    return DtoMapper.toPostDtoLight(updatedPost);
-	}
-
-	@Transactional
-	public void delete(Long id, UserDetails userDetails) {
-	    Post post = postRepo.findById(id)
-	        .orElseThrow(() -> new EntityNotFoundException("Post non trovato con id: " + id));
-
-	    // Verifica che l'utente sia il proprietario del post
-	    if (!post.getUtente().getUsername().equals(userDetails.getUsername())) {
-	        throw new SecurityException("Non sei autorizzato a eliminare questo post");
-	    }
-
-	    postRepo.deleteById(id);
-	}
-	
-
-
-	@Transactional(readOnly = true)
-	public List<PostDto> getTendenze(int limit) {
-	    // Validazione del limite
-	    if (limit <= 0 || limit > 60) {
-	        throw new IllegalArgumentException("Il limite deve essere tra 1 e 60");
-	    }
-	
-	    // Recupera i post ordinati per numero di like
-	    Pageable pageable = PageRequest.of(0, limit);
-	    List<Post> posts = postRepo.findPostsOrderByLikesDesc(pageable);
-	
-	    // USA IL NUOVO MAPPER PER LE TENDENZE
-	    return posts.stream()
-	        .map(DtoMapper::toPostDtoForTendenze) // CAMBIATO QUI!
-	        .collect(Collectors.toList());
-	}
-	//aggiungere miei post, che restituisce la lista di post dell utente loggato
-	//aggiungere service delle tendenze
-	
-	
+    @Autowired PostRepository postRepo;
+    @Autowired UtenteRepository utenteRepo;
+    @Autowired AllegatoRepository allegatoRepo;
+    @Autowired SegueService segueService;
+    @Autowired VotoRepository votoRepo;
+    @Autowired SondaggioService sondaggioService;
 
     @Transactional
-    public List<PostDto> allPostByUtente(Long idUtente) {//da aggiungere pageable?
-        
-        if (!utenteRepo.existsById(idUtente)) {
-            throw new EntityNotFoundException("Utente non trovato con id: " + idUtente);
+    public PostDto create(String contenuto, MultipartFile[] files, String sondaggioJson, String username) {
+        if (contenuto == null || contenuto.isBlank())
+            throw new IllegalArgumentException("Il contenuto non può essere vuoto");
+        if (contenuto.length() > 1000)
+            throw new IllegalArgumentException("Il contenuto non può superare 1000 caratteri");
+
+        Utente u = utenteRepo.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Utente non trovato: " + username));
+
+        Post p = new Post();
+        p.setContenuto(contenuto.trim());
+        p.setUtente(u);
+        Post savedPost = postRepo.save(p);
+
+        if (files != null) {
+            List<Allegato> allegati = salvaFiles(files, savedPost);
+            savedPost.setAllegati(allegati);
         }
-        
-        // Recupera tutti i post dell'utente
-        List<Post> posts = postRepo.findByUtenteId(idUtente);
-        
-        return posts.stream()
-            .map(DtoMapper::toPostDtoComplete)
-            .collect(Collectors.toList());
+
+        if (sondaggioJson != null && !sondaggioJson.isBlank()) {
+            parsaECreaSondaggio(sondaggioJson, savedPost);
+        }
+
+        Post reloaded = postRepo.findById(savedPost.getIdPost()).orElse(savedPost);
+        PostDto dto = DtoMapper.toPostDtoComplete(reloaded);
+        if (reloaded.getSondaggio() != null) {
+            dto.setSondaggio(DtoMapper.toSondaggioDto(reloaded.getSondaggio(), null));
+        }
+        return dto;
     }
-    
+
+    @Transactional(readOnly = true)
+    public List<PostDto> listAll(String username, int page, int size) {
+        Pageable pageable = PageRequest.of(page, Math.min(size, 50));
+        return postRepo.findAllByOrderByDataOraDesc(pageable).stream()
+                .map(p -> enrichWithSondaggio(p, username))
+                .collect(Collectors.toList());
+    }
+
+    private PostDto enrichWithSondaggio(Post p, String username) {
+        PostDto dto = DtoMapper.toPostDtoComplete(p);
+        if (p.getSondaggio() != null) {
+            Long idVotato = username != null
+                    ? votoRepo.findIdOpzioneByUsernameAndSondaggioId(username, p.getSondaggio().getIdSondaggio())
+                    : null;
+            dto.setSondaggio(DtoMapper.toSondaggioDto(p.getSondaggio(), idVotato));
+        }
+        return dto;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void parsaECreaSondaggio(String json, Post post) {
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            java.util.Map<String, Object> data = mapper.readValue(json, java.util.Map.class);
+            String domanda = (String) data.get("domanda");
+            java.util.List<String> opzioni = (java.util.List<String>) data.get("opzioni");
+            Integer durata = data.get("durataGiorni") != null ? (Integer) data.get("durataGiorni") : null;
+            if (domanda != null && !domanda.isBlank() && opzioni != null && opzioni.size() >= 2) {
+                sondaggioService.crea(post, domanda, opzioni, durata);
+            }
+        } catch (Exception e) {
+            // invalid poll data, skip silently
+        }
+    }
+
+    @Transactional
+    public PostDto update(PostFormDto form, UserDetails userDetails) {
+        if (form.getId() == null)
+            throw new IllegalArgumentException("Id post obbligatorio per update");
+        if (form.getContenuto() != null && form.getContenuto().trim().length() > 1000)
+            throw new IllegalArgumentException("Il contenuto non può superare 1000 caratteri");
+
+        Post existingPost = postRepo.findById(form.getId())
+            .orElseThrow(() -> new EntityNotFoundException("Post non trovato con id: " + form.getId()));
+
+        if (!existingPost.getUtente().getUsername().equals(userDetails.getUsername()))
+            throw new SecurityException("Non sei autorizzato a modificare questo post");
+
+        if (form.getContenuto() != null && !form.getContenuto().trim().isEmpty())
+            existingPost.setContenuto(form.getContenuto().trim());
+
+        return DtoMapper.toPostDtoLight(postRepo.save(existingPost));
+    }
+
+    @Transactional
+    public void delete(Long id, UserDetails userDetails) {
+        Post post = postRepo.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Post non trovato con id: " + id));
+
+        if (!post.getUtente().getUsername().equals(userDetails.getUsername()))
+            throw new SecurityException("Non sei autorizzato a eliminare questo post");
+
+        // Elimina i file fisici degli allegati
+        if (post.getAllegati() != null) {
+            post.getAllegati().forEach(a -> eliminaFileFisico(a.getNomeFile()));
+        }
+
+        postRepo.deleteById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostDto> getTendenze(int limit) {
+        if (limit <= 0 || limit > 60)
+            throw new IllegalArgumentException("Il limite deve essere tra 1 e 60");
+        Pageable pageable = PageRequest.of(0, limit);
+        return postRepo.findPostsOrderByLikesDesc(pageable).stream()
+                .map(DtoMapper::toPostDtoForTendenze)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public List<PostDto> allPostByUtente(Long idUtente) {
+        if (!utenteRepo.existsById(idUtente))
+            throw new EntityNotFoundException("Utente non trovato con id: " + idUtente);
+        return postRepo.findByUtenteId(idUtente).stream()
+                .map(DtoMapper::toPostDtoComplete)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostDto> getPostDaSeguiti(String username) {
+        List<String> usernames = segueService.getSeguitiUsernames(username);
+        if (usernames.isEmpty()) return List.of();
+        return postRepo.findByUtenteUsernameIn(usernames).stream()
+                .map(p -> enrichWithSondaggio(p, username))
+                .collect(Collectors.toList());
+    }
+
     @Transactional(readOnly = true)
     public PostDto postById(Long idPost) {
         Post post = postRepo.findById(idPost)
             .orElseThrow(() -> new EntityNotFoundException("Post non trovato con id: " + idPost));
-        
         return DtoMapper.toPostDtoComplete(post);
     }
 
+    private List<Allegato> salvaFiles(MultipartFile[] files, Post post) {
+        List<Allegato> allegati = new ArrayList<>();
+        for (MultipartFile file : files) {
+            if (file.isEmpty()) continue;
 
+            String mimeType = file.getContentType();
+            if (mimeType == null || !ALLOWED_MIME_TYPES.contains(mimeType))
+                throw new IllegalArgumentException("Tipo file non supportato: " + file.getOriginalFilename());
+            if (file.getSize() > MAX_FILE_SIZE)
+                throw new IllegalArgumentException("File troppo grande (max 10MB): " + file.getOriginalFilename());
+
+            String ext = getEstensione(file.getOriginalFilename());
+            String nomeFile = UUID.randomUUID().toString() + ext;
+
+            try {
+                Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
+                Files.createDirectories(uploadPath);
+                Files.copy(file.getInputStream(), uploadPath.resolve(nomeFile));
+            } catch (IOException e) {
+                throw new RuntimeException("Errore nel salvataggio del file: " + file.getOriginalFilename(), e);
+            }
+
+            Allegato a = new Allegato();
+            a.setNomeOriginale(file.getOriginalFilename());
+            a.setNomeFile(nomeFile);
+            a.setUrl("/uploads/" + nomeFile);
+            a.setMimeType(mimeType);
+            a.setTipo(mimeType.startsWith("image/") ? "IMAGE" : "DOCUMENT");
+            a.setPost(post);
+            allegati.add(allegatoRepo.save(a));
+        }
+        return allegati;
+    }
+
+    private void eliminaFileFisico(String nomeFile) {
+        if (nomeFile == null) return;
+        try {
+            Files.deleteIfExists(Paths.get(uploadDir).toAbsolutePath().resolve(nomeFile));
+        } catch (IOException ignored) {}
+    }
+
+    private String getEstensione(String nomeOriginale) {
+        if (nomeOriginale == null) return "";
+        int dot = nomeOriginale.lastIndexOf('.');
+        return dot >= 0 ? nomeOriginale.substring(dot) : "";
+    }
 }

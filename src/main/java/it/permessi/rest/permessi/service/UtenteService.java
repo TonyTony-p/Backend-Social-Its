@@ -1,6 +1,8 @@
 package it.permessi.rest.permessi.service;
 
 import it.permessi.rest.permessi.dto.PageResponse;
+import it.permessi.rest.permessi.dto.ProfiloDto;
+import it.permessi.rest.permessi.dto.ProfiloFormDto;
 import it.permessi.rest.permessi.dto.UtenteFormDto;
 import it.permessi.rest.permessi.dto.UtenteDto;
 import it.permessi.rest.permessi.entity.Ruolo;
@@ -8,6 +10,7 @@ import it.permessi.rest.permessi.entity.Utente;
 import it.permessi.rest.permessi.repository.RuoloRepository;
 import it.permessi.rest.permessi.repository.UtenteRepository;
 import it.permessi.rest.permessi.mapper.DtoMapper;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,6 +27,7 @@ public class UtenteService {
     @Autowired private UtenteRepository repo;
     @Autowired private RuoloRepository ruoloRepo;
     @Autowired private PasswordEncoder encoder;
+    @Lazy @Autowired private SegueService segueService;
 
     
     
@@ -109,6 +113,35 @@ public class UtenteService {
     
     
     
+    /** Profilo pubblico di un utente per username (include post, stats e follow). */
+    @Transactional(readOnly = true)
+    public ProfiloDto getProfilo(String username, String currentUsername) {
+        Utente u = repo.findWithPostsByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Utente non trovato con username: " + username));
+        ProfiloDto dto = DtoMapper.toProfiloDto(u);
+        dto.setNumSeguaci((int) segueService.countSeguaci(username));
+        dto.setNumSeguiti((int) segueService.countSeguiti(username));
+        if (currentUsername != null && !currentUsername.equals(username)) {
+            dto.setSeguito(segueService.staSeguendo(currentUsername, username));
+        }
+        return dto;
+    }
+
+    /** Aggiorna i campi modificabili del proprio profilo. */
+    @Transactional
+    public ProfiloDto updateMyProfilo(String username, ProfiloFormDto form) {
+        Utente u = repo.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Utente non trovato con username: " + username));
+        if (form.getNome() != null && !form.getNome().isBlank()) u.setNome(form.getNome());
+        if (form.getCognome() != null && !form.getCognome().isBlank()) u.setCognome(form.getCognome());
+        u.setBio(form.getBio());
+        u.setFotoProfilo(form.getFotoProfilo());
+        if (form.getDataNascita() != null) u.setDataNascita(form.getDataNascita());
+        if (form.getTelefono() != null) u.setTelefono(form.getTelefono());
+        if (form.getIndirizzo() != null) u.setIndirizzo(form.getIndirizzo());
+        return DtoMapper.toProfiloDto(repo.save(u));
+    }
+
     /** Copia campi dal form, gestendo password e ruolo. */
     private void apply(Utente u, UtenteFormDto form, boolean encodePasswordAlways) {
         u.setNome(form.getNome());
