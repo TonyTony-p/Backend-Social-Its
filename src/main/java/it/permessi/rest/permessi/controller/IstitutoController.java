@@ -1,5 +1,6 @@
 package it.permessi.rest.permessi.controller;
 
+import it.permessi.rest.permessi.dto.AggiornaProfessoreRequest;
 import it.permessi.rest.permessi.dto.CreaProfessoreRequest;
 import it.permessi.rest.permessi.dto.UtenteDto;
 import it.permessi.rest.permessi.service.IstitutoService;
@@ -27,5 +28,14 @@ public class IstitutoController {
     @PreAuthorize("hasAuthority('PROFESSORE_CREATE') or hasAuthority('UTENTE_READ')")
     public ResponseEntity<List<UtenteDto>> listaProfessori() {
         return ResponseEntity.ok(service.listaProfessori());
+    }
+
+    @PutMapping("/professori/{id}")
+    @PreAuthorize("hasAuthority('PROFESSORE_CREATE') or hasAuthority('UTENTE_UPDATE')")
+    public ResponseEntity<UtenteDto> aggiornaProfessore(
+            @PathVariable Long id,
+            @RequestBody AggiornaProfessoreRequest req) {
+        req.setId(id);
+        return ResponseEntity.ok(service.aggiornaProfessore(id, req));
     }
 }

@@ -130,7 +130,7 @@ public class UtenteService {
     /** Ricerca profili per prefisso username (max 10 risultati). */
     @Transactional(readOnly = true)
     public List<ProfiloDto> searchProfiles(String q) {
-        return repo.searchByUsername(q.trim()).stream()
+        return repo.findByUsername(q.trim()).stream()
                 .limit(10)
                 .map(DtoMapper::toProfiloDto)
                 .collect(Collectors.toList());

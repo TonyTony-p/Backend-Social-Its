@@ -1,18 +1,22 @@
 package it.permessi.rest.permessi.controller;
 
 import it.permessi.rest.permessi.dto.*;
+import it.permessi.rest.permessi.dto.CommentoAnnuncioDto;
 import it.permessi.rest.permessi.service.ClasseCorsoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/classi")
@@ -60,7 +64,7 @@ public class ClasseCorsoController {
     }
 
     @GetMapping("/mie")
-    @PreAuthorize("hasRole('PROFESSORE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('PROFESSORE') or hasAuthority('ADMIN')")
     public ResponseEntity<List<ClasseCorsoDto>> mieClassi(
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(service.mieclassi(userDetails.getUsername()));
@@ -84,8 +88,14 @@ public class ClasseCorsoController {
         return ResponseEntity.status(201).body(service.iscrivitiConCodice(codice, userDetails.getUsername()));
     }
 
+    @GetMapping("/{id}/studenti")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<IscrizioneClasseDto>> listaStudenti(@PathVariable Long id) {
+        return ResponseEntity.ok(service.listaStudentiApprovati(id));
+    }
+
     @GetMapping("/{id}/iscrizioni")
-    @PreAuthorize("hasAuthority('ISCRIZIONE_READ')")
+    @PreAuthorize("hasAuthority('PROFESSORE') or hasAuthority('ADMIN') or hasAuthority('ISCRIZIONE_READ')")
     public ResponseEntity<List<IscrizioneClasseDto>> listaIscrizioni(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -93,7 +103,7 @@ public class ClasseCorsoController {
     }
 
     @PutMapping("/{id}/iscrizioni/{iscrizioneId}")
-    @PreAuthorize("hasAuthority('ISCRIZIONE_UPDATE')")
+    @PreAuthorize("hasAuthority('PROFESSORE') or hasAuthority('ADMIN') or hasAuthority('ISCRIZIONE_UPDATE')")
     public ResponseEntity<IscrizioneClasseDto> aggiornaIscrizione(
             @PathVariable Long id,
             @PathVariable Long iscrizioneId,
@@ -135,6 +145,14 @@ public class ClasseCorsoController {
         return ResponseEntity.ok(service.listaAnnunci(id));
     }
 
+    @PostMapping(value = "/{id}/annunci/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('ANNUNCIO_CREATE')")
+    public ResponseEntity<Map<String, String>> uploadAllegatoAnnuncio(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(service.uploadAllegatoAnnuncio(file));
+    }
+
     @DeleteMapping("/{id}/annunci/{annuncioId}")
     @PreAuthorize("hasAuthority('ANNUNCIO_DELETE')")
     public ResponseEntity<Void> eliminaAnnuncio(
@@ -142,6 +160,36 @@ public class ClasseCorsoController {
             @PathVariable Long annuncioId,
             @AuthenticationPrincipal UserDetails userDetails) {
         service.eliminaAnnuncio(id, annuncioId, userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/annunci/{annuncioId}/commenti")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<CommentoAnnuncioDto>> listaCommenti(
+            @PathVariable Long id,
+            @PathVariable Long annuncioId) {
+        return ResponseEntity.ok(service.listaCommenti(id, annuncioId));
+    }
+
+    @PostMapping("/{id}/annunci/{annuncioId}/commenti")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<CommentoAnnuncioDto> aggiungiCommento(
+            @PathVariable Long id,
+            @PathVariable Long annuncioId,
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.status(201).body(
+            service.aggiungiCommento(id, annuncioId, body.get("testo"), userDetails.getUsername()));
+    }
+
+    @DeleteMapping("/{id}/annunci/{annuncioId}/commenti/{commentoId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> eliminaCommento(
+            @PathVariable Long id,
+            @PathVariable Long annuncioId,
+            @PathVariable Long commentoId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        service.eliminaCommento(id, annuncioId, commentoId, userDetails.getUsername());
         return ResponseEntity.noContent().build();
     }
 

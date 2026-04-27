@@ -5,6 +5,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "annunci")
@@ -29,6 +31,10 @@ public class Annuncio {
     @Column(nullable = false, length = 3000)
     private String contenuto;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "annuncio_allegati", joinColumns = @JoinColumn(name = "annuncio_id"))
+    private List<AllegatoAnnuncioInfo> allegati = new ArrayList<>();
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -43,6 +49,8 @@ public class Annuncio {
     public void setTitolo(String titolo) { this.titolo = titolo; }
     public String getContenuto() { return contenuto; }
     public void setContenuto(String contenuto) { this.contenuto = contenuto; }
+    public List<AllegatoAnnuncioInfo> getAllegati() { return allegati; }
+    public void setAllegati(List<AllegatoAnnuncioInfo> allegati) { this.allegati = allegati; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }
