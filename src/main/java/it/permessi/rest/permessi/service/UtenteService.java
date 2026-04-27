@@ -10,6 +10,7 @@ import it.permessi.rest.permessi.entity.Utente;
 import it.permessi.rest.permessi.repository.RuoloRepository;
 import it.permessi.rest.permessi.repository.UtenteRepository;
 import it.permessi.rest.permessi.mapper.DtoMapper;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,6 +27,7 @@ public class UtenteService {
     @Autowired private UtenteRepository repo;
     @Autowired private RuoloRepository ruoloRepo;
     @Autowired private PasswordEncoder encoder;
+    @Lazy @Autowired private SegueService segueService;
 
     
     
@@ -111,12 +113,18 @@ public class UtenteService {
     
     
     
-    /** Profilo pubblico di un utente per username (include post e stats). */
+    /** Profilo pubblico di un utente per username (include post, stats e follow). */
     @Transactional(readOnly = true)
-    public ProfiloDto getProfilo(String username) {
-        return repo.findWithPostsByUsername(username)
-                .map(DtoMapper::toProfiloDto)
+    public ProfiloDto getProfilo(String username, String currentUsername) {
+        Utente u = repo.findWithPostsByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Utente non trovato con username: " + username));
+        ProfiloDto dto = DtoMapper.toProfiloDto(u);
+        dto.setNumSeguaci((int) segueService.countSeguaci(username));
+        dto.setNumSeguiti((int) segueService.countSeguiti(username));
+        if (currentUsername != null && !currentUsername.equals(username)) {
+            dto.setSeguito(segueService.staSeguendo(currentUsername, username));
+        }
+        return dto;
     }
 
     /** Aggiorna i campi modificabili del proprio profilo. */

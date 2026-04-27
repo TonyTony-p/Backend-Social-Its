@@ -1,21 +1,27 @@
 package it.permessi.rest.permessi.mapper;
 
+import it.permessi.rest.permessi.dto.AllegatoDto;
 import it.permessi.rest.permessi.dto.CommentoDto;
 import it.permessi.rest.permessi.dto.GruppoDto;
 import it.permessi.rest.permessi.dto.LikeDto;
+import it.permessi.rest.permessi.dto.OpzioneDto;
 import it.permessi.rest.permessi.dto.PermessoDto;
 import it.permessi.rest.permessi.dto.PermessoRuoloDto;
 import it.permessi.rest.permessi.dto.PostDto;
 import it.permessi.rest.permessi.dto.ProfiloDto;
 import it.permessi.rest.permessi.dto.RuoloDto;
+import it.permessi.rest.permessi.dto.SondaggioDto;
 import it.permessi.rest.permessi.dto.UtenteDto;
+import it.permessi.rest.permessi.entity.Allegato;
 import it.permessi.rest.permessi.entity.Commento;
 import it.permessi.rest.permessi.entity.Gruppo;
 import it.permessi.rest.permessi.entity.Like;
+import it.permessi.rest.permessi.entity.OpzioneSondaggio;
 import it.permessi.rest.permessi.entity.Permesso;
 import it.permessi.rest.permessi.entity.Post;
 import it.permessi.rest.permessi.entity.Ruolo;
 import it.permessi.rest.permessi.entity.RuoloPermesso;
+import it.permessi.rest.permessi.entity.Sondaggio;
 import it.permessi.rest.permessi.entity.Utente;
 
 import java.util.List;
@@ -170,6 +176,7 @@ public class DtoMapper {
     	UtenteDto dto = new UtenteDto();
     	dto.setNome(u.getNome());
     	dto.setCognome(u.getCognome());
+    	dto.setUsername(u.getUsername());
     	return dto;
     }
     
@@ -248,9 +255,55 @@ public class DtoMapper {
                 .map(DtoMapper::toLikeDtoMinimal)
                 .collect(Collectors.toList());
             dto.setLike(likeDtos);
+            dto.setNumeroLike(p.getLikes().size());
+        } else {
+            dto.setNumeroLike(0);
         }
 
+        if (p.getCommenti() != null && !p.getCommenti().isEmpty()) {
+            List<CommentoDto> commentiDtos = p.getCommenti().stream()
+                .map(DtoMapper::toCommentoDtoLight)
+                .collect(Collectors.toList());
+            dto.setCommenti(commentiDtos);
+        }
 
+        if (p.getAllegati() != null && !p.getAllegati().isEmpty()) {
+            List<AllegatoDto> allegatiDtos = p.getAllegati().stream()
+                .map(DtoMapper::toAllegatoDto)
+                .collect(Collectors.toList());
+            dto.setAllegati(allegatiDtos);
+        }
+
+        return dto;
+    }
+
+    public static SondaggioDto toSondaggioDto(Sondaggio s, Long idOpzioneVotata) {
+        if (s == null) return null;
+        SondaggioDto dto = new SondaggioDto();
+        dto.setIdSondaggio(s.getIdSondaggio());
+        dto.setDomanda(s.getDomanda());
+        if (s.getScadenza() != null) dto.setScadenza(s.getScadenza().toString());
+        dto.setScaduto(s.isScaduto());
+        dto.setIdOpzioneVotata(idOpzioneVotata);
+        if (s.getOpzioni() != null) {
+            int totale = s.getOpzioni().stream()
+                .mapToInt(o -> o.getVoti() != null ? o.getVoti().size() : 0).sum();
+            dto.setTotaleVoti(totale);
+            dto.setOpzioni(s.getOpzioni().stream()
+                .map(o -> toOpzioneDto(o, totale))
+                .collect(Collectors.toList()));
+        }
+        return dto;
+    }
+
+    public static OpzioneDto toOpzioneDto(OpzioneSondaggio o, int totale) {
+        if (o == null) return null;
+        OpzioneDto dto = new OpzioneDto();
+        dto.setIdOpzione(o.getIdOpzione());
+        dto.setTesto(o.getTesto());
+        int numVoti = o.getVoti() != null ? o.getVoti().size() : 0;
+        dto.setNumVoti(numVoti);
+        dto.setPercentuale(totale > 0 ? (int) Math.round((double) numVoti / totale * 100) : 0);
         return dto;
     }
     
@@ -333,8 +386,17 @@ public class DtoMapper {
         dto.setTesto(c.getTesto());
         dto.setDataOra(c.getDataOra());
         dto.setUtente(toUtenteDtoLight(c.getUtente()));
-        dto.setPost(toPostDtoLight(c.getPost()));
-        // Utente e Post non vengono settati per evitare loop
+        return dto;
+    }
+
+    public static AllegatoDto toAllegatoDto(Allegato a) {
+        if (a == null) return null;
+        AllegatoDto dto = new AllegatoDto();
+        dto.setId(a.getIdAllegato());
+        dto.setNomeOriginale(a.getNomeOriginale());
+        dto.setUrl(a.getUrl());
+        dto.setMimeType(a.getMimeType());
+        dto.setTipo(a.getTipo());
         return dto;
     }
 

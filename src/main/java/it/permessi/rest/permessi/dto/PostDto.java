@@ -14,9 +14,11 @@ public class PostDto {
 	private List <CommentoDto> commenti;
 	private List <LikeDto> like;
 	private Integer numeroLike;
+	private List<AllegatoDto> allegati;
+	private SondaggioDto sondaggio;
 
-    
-    
+
+
 	public Long getId() {
 		return id;
 	}
@@ -73,9 +75,12 @@ public class PostDto {
     public Integer getNumeroLike() { 
     	return numeroLike; 
     }
-    public void setNumeroLike(Integer numeroLike) { 
-    	this.numeroLike = numeroLike; 
-    	}
+    public void setNumeroLike(Integer numeroLike) {
+    	this.numeroLike = numeroLike;
+    }
 
-	
+    public List<AllegatoDto> getAllegati() { return allegati; }
+    public void setAllegati(List<AllegatoDto> allegati) { this.allegati = allegati; }
+    public SondaggioDto getSondaggio() { return sondaggio; }
+    public void setSondaggio(SondaggioDto sondaggio) { this.sondaggio = sondaggio; }
 }
