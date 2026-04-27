@@ -247,6 +247,7 @@ public class DtoMapper {
             dto.setIdUtente(p.getUtente().getId());
             dto.setNomeUtente(p.getUtente().getNome());
             dto.setUsernameUtente(p.getUtente().getUsername());
+            if (p.getUtente().getRuolo() != null) dto.setRuoloUtente(p.getUtente().getRuolo().getNome());
         }
 
         // Mappa i like
@@ -319,13 +320,13 @@ public class DtoMapper {
         dto.setNomeUtente(p.getUtente().getNome());
         dto.setUsernameUtente(p.getUtente().getUsername());
         dto.setContenuto(p.getContenuto());
-        dto.setDataOra(p.getDataOra());           
-            
+        dto.setDataOra(p.getDataOra());
+        if (p.getUtente().getRuolo() != null) dto.setRuoloUtente(p.getUtente().getRuolo().getNome());
 
         return dto;
     }
-    
-    
+
+
    public static PostDto toPostDtoForTendenze(Post p) {
        if (p == null) return null;
 
@@ -339,8 +340,9 @@ public class DtoMapper {
            dto.setIdUtente(p.getUtente().getId());
            dto.setNomeUtente(p.getUtente().getNome());
            dto.setUsernameUtente(p.getUtente().getUsername());
+           if (p.getUtente().getRuolo() != null) dto.setRuoloUtente(p.getUtente().getRuolo().getNome());
        }
-       
+
        // IMPOSTA SOLO IL NUMERO DI LIKE (non l'array completo)
        if (p.getLikes() != null) {
            dto.setNumeroLike(p.getLikes().size());
@@ -366,6 +368,7 @@ public class DtoMapper {
         dto.setBio(u.getBio());
         dto.setFotoProfilo(u.getFotoProfilo());
         dto.setMemberDal(u.getCreatedAt());
+        if (u.getRuolo() != null) dto.setRuolo(u.getRuolo().getNome());
 
         if (u.getPosts() != null) {
             dto.setNumPost(u.getPosts().size());

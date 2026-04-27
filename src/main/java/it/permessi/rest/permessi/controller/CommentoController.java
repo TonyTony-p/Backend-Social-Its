@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,6 +29,7 @@ public class CommentoController {
     private CommentoService commentoService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('COMMENTO_CREATE')")
     public ResponseEntity<CommentoDto> create(@RequestBody @Valid CommentoFormDto form,
                                              @AuthenticationPrincipal UserDetails userDetails) {
         CommentoDto commento = commentoService.create(form, userDetails.getUsername());
@@ -35,6 +37,7 @@ public class CommentoController {
     }
     
     @PutMapping("/{idCommento}")
+    @PreAuthorize("hasAuthority('COMMENTO_UPDATE')")
     public ResponseEntity<CommentoDto> update(@PathVariable Integer idCommento,
                                               @RequestBody @Valid CommentoFormDto form,
                                               @AuthenticationPrincipal UserDetails userDetails) {
@@ -43,6 +46,7 @@ public class CommentoController {
     }
 
     @DeleteMapping("/{idCommento}")
+    @PreAuthorize("hasAuthority('COMMENTO_DELETE')")
     public ResponseEntity<Void> delete(@PathVariable Integer idCommento,
                                         @AuthenticationPrincipal UserDetails userDetails) {
         commentoService.delete(idCommento, userDetails.getUsername());
@@ -50,6 +54,7 @@ public class CommentoController {
     }
     
     @GetMapping("/miei")
+    @PreAuthorize("hasAuthority('COMMENTO_READ')")
     public ResponseEntity<List<CommentoDto>> listaMieiCommenti(@AuthenticationPrincipal UserDetails userDetails) {
         List<CommentoDto> commenti = commentoService.listaMieiCommenti(userDetails.getUsername());
         return ResponseEntity.ok(commenti);
