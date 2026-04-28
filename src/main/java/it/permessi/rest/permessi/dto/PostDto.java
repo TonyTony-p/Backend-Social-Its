@@ -15,6 +15,7 @@ public class PostDto {
 	private List <CommentoDto> commenti;
 	private List <LikeDto> like;
 	private Integer numeroLike;
+	private Integer numeroCommenti;
 	private List<AllegatoDto> allegati;
 	private SondaggioDto sondaggio;
 
@@ -79,6 +80,9 @@ public class PostDto {
     public void setNumeroLike(Integer numeroLike) {
     	this.numeroLike = numeroLike;
     }
+
+    public Integer getNumeroCommenti() { return numeroCommenti; }
+    public void setNumeroCommenti(Integer numeroCommenti) { this.numeroCommenti = numeroCommenti; }
 
     public List<AllegatoDto> getAllegati() { return allegati; }
     public void setAllegati(List<AllegatoDto> allegati) { this.allegati = allegati; }
