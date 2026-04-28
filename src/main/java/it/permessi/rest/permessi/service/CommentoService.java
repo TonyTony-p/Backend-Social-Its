@@ -24,6 +24,7 @@ public class CommentoService {
 	@Autowired PostRepository postRepo;
 	@Autowired UtenteRepository utenteRepo;
 	@Autowired CommentoRepository commentoRepo;
+	@Autowired NotificaService notificaService;
 	
 	@Transactional
     public CommentoDto create(CommentoFormDto form, String username) {
@@ -43,6 +44,13 @@ public class CommentoService {
         commento.setDataOra(LocalDateTime.now());
 
         Commento savedCommento = commentoRepo.save(commento);
+
+        notificaService.crea(
+            post.getUtente().getUsername(), "COMMENTO",
+            utente.getUsername(), utente.getNome() + " " + utente.getCognome(),
+            post.getIdPost(), "POST",
+            utente.getNome() + " ha commentato il tuo post"
+        );
         return DtoMapper.toCommentoDtoLight(savedCommento);
     }
 	

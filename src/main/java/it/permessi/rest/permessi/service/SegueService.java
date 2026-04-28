@@ -15,6 +15,7 @@ public class SegueService {
 
     @Autowired private SegueRepository segueRepo;
     @Autowired private UtenteRepository utenteRepo;
+    @Autowired private NotificaService notificaService;
 
     @Transactional
     public void segui(String seguaceUsername, String seguitoUsername) {
@@ -32,6 +33,13 @@ public class SegueService {
         s.setSeguace(seguace);
         s.setSeguito(seguito);
         segueRepo.save(s);
+
+        notificaService.crea(
+            seguitoUsername, "FOLLOW",
+            seguaceUsername, seguace.getNome() + " " + seguace.getCognome(),
+            seguace.getId(), "UTENTE",
+            seguace.getNome() + " ha iniziato a seguirti"
+        );
     }
 
     @Transactional

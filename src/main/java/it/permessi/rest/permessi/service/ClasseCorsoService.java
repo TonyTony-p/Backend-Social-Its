@@ -48,6 +48,7 @@ public class ClasseCorsoService {
     @Autowired private CompitoRepository compitoRepo;
     @Autowired private ConsegnaCompitoRepository consegnaRepo;
     @Autowired private UtenteRepository utenteRepo;
+    @Autowired private NotificaService notificaService;
 
     // ── ClasseCorso ──────────────────────────────────────────────
 
@@ -66,6 +67,14 @@ public class ClasseCorsoService {
     @Transactional(readOnly = true)
     public Page<ClasseCorsoDto> listaClassiPubbliche(Pageable pageable) {
         return classeRepo.findByTipo(TipoClasse.PUBBLICA, pageable).map(this::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ClasseCorsoDto> topClassiPubbliche(int limit) {
+        org.springframework.data.domain.PageRequest pr = org.springframework.data.domain.PageRequest.of(0, Math.min(limit, 10));
+        return classeRepo.findTopClassiPubbliche(pr).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -111,10 +120,20 @@ public class ClasseCorsoService {
         IscrizioneClasse iscrizione = new IscrizioneClasse();
         iscrizione.setStudente(studente);
         iscrizione.setClasse(classe);
-        iscrizione.setStato(classe.getTipo() == TipoClasse.PUBBLICA
-                ? StatoIscrizione.APPROVATA
-                : StatoIscrizione.IN_ATTESA);
-        return toIscrizioneDto(iscrizioneRepo.save(iscrizione));
+        StatoIscrizione statoIniziale = classe.getTipo() == TipoClasse.PUBBLICA
+                ? StatoIscrizione.APPROVATA : StatoIscrizione.IN_ATTESA;
+        iscrizione.setStato(statoIniziale);
+        IscrizioneClasse saved = iscrizioneRepo.save(iscrizione);
+
+        if (statoIniziale == StatoIscrizione.IN_ATTESA) {
+            notificaService.crea(
+                classe.getProfessore().getUsername(), "ISCRIZIONE_RICHIESTA",
+                studente.getUsername(), studente.getNome() + " " + studente.getCognome(),
+                classe.getId(), "CLASSE",
+                studente.getNome() + " ha richiesto di iscriversi a \"" + classe.getNome() + "\""
+            );
+        }
+        return toIscrizioneDto(saved);
     }
 
     @Transactional
@@ -150,7 +169,21 @@ public class ClasseCorsoService {
         }
         isc.setStato(dto.getStato());
         isc.setDataRisposta(Instant.now());
-        return toIscrizioneDto(iscrizioneRepo.save(isc));
+        IscrizioneClasse aggiornata = iscrizioneRepo.save(isc);
+
+        ClasseCorso classe = aggiornata.getClasse();
+        Utente professore = classe.getProfessore();
+        String tipoNotifica = dto.getStato() == StatoIscrizione.APPROVATA
+                ? "ISCRIZIONE_APPROVATA" : "ISCRIZIONE_RIFIUTATA";
+        String msg = dto.getStato() == StatoIscrizione.APPROVATA
+                ? "La tua iscrizione a \"" + classe.getNome() + "\" è stata approvata"
+                : "La tua iscrizione a \"" + classe.getNome() + "\" è stata rifiutata";
+        notificaService.crea(
+            aggiornata.getStudente().getUsername(), tipoNotifica,
+            professore.getUsername(), professore.getNome() + " " + professore.getCognome(),
+            classe.getId(), "CLASSE", msg
+        );
+        return toIscrizioneDto(aggiornata);
     }
 
     @Transactional
@@ -182,7 +215,17 @@ public class ClasseCorsoService {
         String contenuto = form.getContenuto();
         a.setContenuto(contenuto != null ? contenuto : "");
         if (form.getAllegati() != null) a.setAllegati(new ArrayList<>(form.getAllegati()));
-        return toAnnuncioDto(annuncioRepo.save(a));
+        AnnuncioDto dto = toAnnuncioDto(annuncioRepo.save(a));
+
+        String attoreNome = autore.getNome() + " " + autore.getCognome();
+        String msg = "Nuovo annuncio in \"" + classe.getNome() + "\": " + form.getTitolo();
+        iscrizioneRepo.findByClasse_IdAndStato(classeId, StatoIscrizione.APPROVATA)
+            .forEach(isc -> notificaService.crea(
+                isc.getStudente().getUsername(), "ANNUNCIO",
+                autore.getUsername(), attoreNome,
+                dto.getId(), "ANNUNCIO", msg
+            ));
+        return dto;
     }
 
     @Transactional(readOnly = true)
