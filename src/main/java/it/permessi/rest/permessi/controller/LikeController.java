@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -27,10 +28,9 @@ public class LikeController {
 
 	@Autowired LikeService service;
 	
-	//crea un like
-	
 	@PostMapping
-	public ResponseEntity<LikeDto> creaLike(@Valid @RequestBody LikeFormDto form, 
+	@PreAuthorize("hasAuthority('LIKE_CREATE')")
+	public ResponseEntity<LikeDto> creaLike(@Valid @RequestBody LikeFormDto form,
 	                                       @AuthenticationPrincipal UserDetails userDetails) {
 	    LikeDto created = service.create(form, userDetails.getUsername());
 	    return ResponseEntity.status(HttpStatus.CREATED).body(created);
@@ -38,6 +38,7 @@ public class LikeController {
 	
 
 	@GetMapping("/miei")
+	@PreAuthorize("hasAuthority('LIKE_READ')")
 	public ResponseEntity<Page<LikeDto>> getLikesByUser(
 	        @AuthenticationPrincipal UserDetails userDetails,
 	        Pageable pageable) {  
@@ -54,7 +55,8 @@ public class LikeController {
 	
 	
     @DeleteMapping
-    public ResponseEntity<Void> rimuoviLike(@Valid @RequestBody LikeFormDto form, 
+    @PreAuthorize("hasAuthority('LIKE_DELETE')")
+    public ResponseEntity<Void> rimuoviLike(@Valid @RequestBody LikeFormDto form,
                                         @AuthenticationPrincipal UserDetails userDetails) {
         service.rimuovi(form, userDetails.getUsername());
         return ResponseEntity.noContent().build();

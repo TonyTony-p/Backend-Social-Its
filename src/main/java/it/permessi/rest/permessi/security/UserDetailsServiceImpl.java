@@ -1,7 +1,6 @@
 package it.permessi.rest.permessi.security;
 
 import java.util.ArrayList;
-
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,14 +23,17 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Utente u = utenteRepository.findByUsername(username)
+        Utente u = utenteRepository.findByUsernameWithPermissions(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Utente non trovato: " + username));
 
-        // Solo il ruolo, niente permessi
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-        
+
         if (u.getRuolo() != null) {
             authorities.add(new SimpleGrantedAuthority(u.getRuolo().getNome()));
+            // Carica tutti i permessi del ruolo come authorities individuali
+            u.getRuolo().getRuoloPermessi().forEach(rp ->
+                authorities.add(new SimpleGrantedAuthority(rp.getPermesso().getAlias()))
+            );
         } else {
             authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
         }
