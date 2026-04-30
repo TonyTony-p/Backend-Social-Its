@@ -19,14 +19,17 @@ import it.permessi.rest.permessi.repository.UtenteRepository;
 
 public class LikeService {
 	
-    @Autowired 
+    @Autowired
     private LikeRepository likeRepo;
-    
+
     @Autowired
     private UtenteRepository utenteRepo;
-    
+
     @Autowired
     private PostRepository postRepo;
+
+    @Autowired
+    private NotificaService notificaService;
 
     public LikeDto create(LikeFormDto form, String username) {
         
@@ -47,7 +50,15 @@ public class LikeService {
 
         // Crea e salva il like
         Like like = new Like(utente, post);
-        return DtoMapper.toLikeDtoLight(likeRepo.save(like));
+        LikeDto dto = DtoMapper.toLikeDtoLight(likeRepo.save(like));
+
+        notificaService.crea(
+            post.getUtente().getUsername(), "LIKE",
+            utente.getUsername(), utente.getNome() + " " + utente.getCognome(),
+            post.getIdPost(), "POST",
+            utente.getNome() + " ha messo ★ al tuo post"
+        );
+        return dto;
     }
     
     //mostra solo i miei like

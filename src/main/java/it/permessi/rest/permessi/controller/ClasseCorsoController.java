@@ -39,6 +39,12 @@ public class ClasseCorsoController {
         return ResponseEntity.ok(service.listaClassiPubbliche(pageable));
     }
 
+    @GetMapping("/top")
+    public ResponseEntity<List<ClasseCorsoDto>> topClassi(
+            @RequestParam(defaultValue = "5") int limit) {
+        return ResponseEntity.ok(service.topClassiPubbliche(limit));
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('CLASSE_READ')")
     public ResponseEntity<ClasseCorsoDto> dettaglio(@PathVariable Long id) {

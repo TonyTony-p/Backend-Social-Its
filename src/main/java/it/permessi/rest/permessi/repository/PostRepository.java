@@ -1,5 +1,6 @@
 package it.permessi.rest.permessi.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -15,7 +16,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     Page<Post> findAllByOrderByDataOraDesc(Pageable pageable);
 
-    @Query("SELECT p FROM Post p LEFT JOIN p.likes ORDER BY SIZE(p.likes) DESC")
+    @Query("SELECT p FROM Post p WHERE p.dataOra >= :since ORDER BY SIZE(p.likes) DESC")
+    List<Post> findTrendingPostsSince(@Param("since") LocalDateTime since, Pageable pageable);
+
+    @Query("SELECT p FROM Post p ORDER BY SIZE(p.likes) DESC")
     List<Post> findPostsOrderByLikesDesc(Pageable pageable);
 
     @Query("SELECT p FROM Post p WHERE p.utente.username IN :usernames ORDER BY p.dataOra DESC")

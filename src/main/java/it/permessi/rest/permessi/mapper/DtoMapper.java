@@ -343,16 +343,18 @@ public class DtoMapper {
            if (p.getUtente().getRuolo() != null) dto.setRuoloUtente(p.getUtente().getRuolo().getNome());
        }
 
-       // IMPOSTA SOLO IL NUMERO DI LIKE (non l'array completo)
        if (p.getLikes() != null) {
            dto.setNumeroLike(p.getLikes().size());
        } else {
            dto.setNumeroLike(0);
        }
-       
-       // NON impostiamo dto.setLike() quindi l'array rimane null
-       // Grazie a @JsonInclude(JsonInclude.Include.NON_NULL) non apparirà nel JSON
-       
+
+       if (p.getCommenti() != null) {
+           dto.setNumeroCommenti(p.getCommenti().size());
+       } else {
+           dto.setNumeroCommenti(0);
+       }
+
        return dto;
    }
     
