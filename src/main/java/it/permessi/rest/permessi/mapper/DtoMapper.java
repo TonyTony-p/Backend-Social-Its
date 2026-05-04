@@ -326,6 +326,37 @@ public class DtoMapper {
         return dto;
     }
 
+    /** Per la pagina profilo: include conteggi like/commenti e allegati (senza lista completa like). */
+    public static PostDto toPostDtoForProfile(Post p) {
+        if (p == null) return null;
+
+        PostDto dto = new PostDto();
+        dto.setId(p.getIdPost());
+        dto.setIdUtente(p.getUtente().getId());
+        dto.setNomeUtente(p.getUtente().getNome());
+        dto.setUsernameUtente(p.getUtente().getUsername());
+        dto.setContenuto(p.getContenuto());
+        dto.setDataOra(p.getDataOra());
+        if (p.getUtente().getRuolo() != null) dto.setRuoloUtente(p.getUtente().getRuolo().getNome());
+
+        dto.setNumeroLike(p.getLikes() != null ? p.getLikes().size() : 0);
+        dto.setNumeroCommenti(p.getCommenti() != null ? p.getCommenti().size() : 0);
+
+        if (p.getCommenti() != null && !p.getCommenti().isEmpty()) {
+            dto.setCommenti(p.getCommenti().stream()
+                .map(DtoMapper::toCommentoDtoLight)
+                .collect(Collectors.toList()));
+        }
+
+        if (p.getAllegati() != null && !p.getAllegati().isEmpty()) {
+            dto.setAllegati(p.getAllegati().stream()
+                .map(DtoMapper::toAllegatoDto)
+                .collect(Collectors.toList()));
+        }
+
+        return dto;
+    }
+
 
    public static PostDto toPostDtoForTendenze(Post p) {
        if (p == null) return null;
@@ -379,7 +410,7 @@ public class DtoMapper {
                 .sum();
             dto.setNumLike(totaleLike);
             dto.setPosts(u.getPosts().stream()
-                .map(DtoMapper::toPostDtoLight)
+                .map(DtoMapper::toPostDtoForProfile)
                 .collect(Collectors.toList()));
         }
         return dto;

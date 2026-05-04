@@ -21,7 +21,10 @@ public class NotificaService {
     @Autowired private UtenteRepository utenteRepo;
 
     /**
-     * Crea una notifica. Non genera nulla se l'attore coincide con il destinatario.
+     * Crea una notifica. Se ne esiste già una non letta dello stesso tipo e
+     * riferimento (es. stessa conversazione), aggiorna quella esistente invece
+     * di crearne una nuova — evita lo spam di notifiche per chat attive.
+     * Non genera nulla se l'attore coincide con il destinatario.
      */
     @Transactional
     public void crea(String destinatarioUsername, String tipo,
@@ -31,6 +34,21 @@ public class NotificaService {
 
         Utente destinatario = utenteRepo.findByUsername(destinatarioUsername).orElse(null);
         if (destinatario == null) return;
+
+        // Deduplicazione: aggiorna la notifica non letta esistente per lo stesso riferimento
+        if (idRiferimento != null) {
+            List<Notifica> esistenti = notificaRepo.findUnreadByTipoAndRiferimento(
+                    destinatarioUsername, tipo, idRiferimento, PageRequest.of(0, 1));
+            if (!esistenti.isEmpty()) {
+                Notifica esistente = esistenti.get(0);
+                esistente.setAttoreUsername(attoreUsername);
+                esistente.setAttoreNome(attoreNome);
+                esistente.setMessaggio(messaggio);
+                esistente.setCreatedAt(java.time.LocalDateTime.now());
+                notificaRepo.save(esistente);
+                return;
+            }
+        }
 
         Notifica n = new Notifica();
         n.setDestinatario(destinatario);
