@@ -63,7 +63,7 @@ public class PostController {
     }
 
     @DeleteMapping("/elimina/{id}")
-    @PreAuthorize("hasAuthority('POST_DELETE')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> elimina(@PathVariable Long id,
                                         @AuthenticationPrincipal UserDetails userDetails) {
         service.delete(id, userDetails);

@@ -24,4 +24,11 @@ public interface NotificaRepository extends JpaRepository<Notifica, Long> {
     @Modifying
     @Query("DELETE FROM Notifica n WHERE n.createdAt < :limite")
     void deleteByCreatedAtBefore(@Param("limite") java.time.LocalDateTime limite);
+
+    /** Prima notifica non letta dello stesso tipo e riferimento per un destinatario (per deduplicazione). */
+    @Query("SELECT n FROM Notifica n WHERE n.destinatario.username = :username AND n.tipo = :tipo AND n.idRiferimento = :rifId AND n.letta = false ORDER BY n.createdAt DESC")
+    List<Notifica> findUnreadByTipoAndRiferimento(@Param("username") String username,
+                                                   @Param("tipo") String tipo,
+                                                   @Param("rifId") Long rifId,
+                                                   Pageable pageable);
 }
