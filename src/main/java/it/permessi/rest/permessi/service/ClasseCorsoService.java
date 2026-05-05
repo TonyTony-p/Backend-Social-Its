@@ -4,27 +4,51 @@ import it.permessi.rest.permessi.dto.*;
 import it.permessi.rest.permessi.entity.*;
 import it.permessi.rest.permessi.entity.ClasseCorso.TipoClasse;
 import it.permessi.rest.permessi.entity.IscrizioneClasse.StatoIscrizione;
+import it.permessi.rest.permessi.dto.CommentoAnnuncioDto;
+import it.permessi.rest.permessi.entity.CommentoAnnuncio;
 import it.permessi.rest.permessi.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 public class ClasseCorsoService {
 
+    private static final long MAX_ALLEGATO_SIZE = 10 * 1024 * 1024;
+    private static final List<String> ALLOWED_MIME = List.of(
+        "image/jpeg", "image/png", "image/gif", "image/webp",
+        "application/pdf", "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/plain"
+    );
+
+    @Value("${app.upload.dir:uploads}")
+    private String uploadDir;
+
     @Autowired private ClasseCorsoRepository classeRepo;
     @Autowired private IscrizioneClasseRepository iscrizioneRepo;
     @Autowired private AnnuncioRepository annuncioRepo;
+    @Autowired private CommentoAnnuncioRepository commentoAnnuncioRepo;
     @Autowired private MaterialeClasseRepository materialeRepo;
     @Autowired private CompitoRepository compitoRepo;
     @Autowired private ConsegnaCompitoRepository consegnaRepo;
     @Autowired private UtenteRepository utenteRepo;
+    @Autowired private NotificaService notificaService;
 
     // ── ClasseCorso ──────────────────────────────────────────────
 
@@ -43,6 +67,14 @@ public class ClasseCorsoService {
     @Transactional(readOnly = true)
     public Page<ClasseCorsoDto> listaClassiPubbliche(Pageable pageable) {
         return classeRepo.findByTipo(TipoClasse.PUBBLICA, pageable).map(this::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ClasseCorsoDto> topClassiPubbliche(int limit) {
+        org.springframework.data.domain.PageRequest pr = org.springframework.data.domain.PageRequest.of(0, Math.min(limit, 10));
+        return classeRepo.findTopClassiPubbliche(pr).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -88,10 +120,20 @@ public class ClasseCorsoService {
         IscrizioneClasse iscrizione = new IscrizioneClasse();
         iscrizione.setStudente(studente);
         iscrizione.setClasse(classe);
-        iscrizione.setStato(classe.getTipo() == TipoClasse.PUBBLICA
-                ? StatoIscrizione.APPROVATA
-                : StatoIscrizione.IN_ATTESA);
-        return toIscrizioneDto(iscrizioneRepo.save(iscrizione));
+        StatoIscrizione statoIniziale = classe.getTipo() == TipoClasse.PUBBLICA
+                ? StatoIscrizione.APPROVATA : StatoIscrizione.IN_ATTESA;
+        iscrizione.setStato(statoIniziale);
+        IscrizioneClasse saved = iscrizioneRepo.save(iscrizione);
+
+        if (statoIniziale == StatoIscrizione.IN_ATTESA) {
+            notificaService.crea(
+                classe.getProfessore().getUsername(), "ISCRIZIONE_RICHIESTA",
+                studente.getUsername(), studente.getNome() + " " + studente.getCognome(),
+                classe.getId(), "CLASSE",
+                studente.getNome() + " ha richiesto di iscriversi a \"" + classe.getNome() + "\""
+            );
+        }
+        return toIscrizioneDto(saved);
     }
 
     @Transactional
@@ -127,7 +169,21 @@ public class ClasseCorsoService {
         }
         isc.setStato(dto.getStato());
         isc.setDataRisposta(Instant.now());
-        return toIscrizioneDto(iscrizioneRepo.save(isc));
+        IscrizioneClasse aggiornata = iscrizioneRepo.save(isc);
+
+        ClasseCorso classe = aggiornata.getClasse();
+        Utente professore = classe.getProfessore();
+        String tipoNotifica = dto.getStato() == StatoIscrizione.APPROVATA
+                ? "ISCRIZIONE_APPROVATA" : "ISCRIZIONE_RIFIUTATA";
+        String msg = dto.getStato() == StatoIscrizione.APPROVATA
+                ? "La tua iscrizione a \"" + classe.getNome() + "\" è stata approvata"
+                : "La tua iscrizione a \"" + classe.getNome() + "\" è stata rifiutata";
+        notificaService.crea(
+            aggiornata.getStudente().getUsername(), tipoNotifica,
+            professore.getUsername(), professore.getNome() + " " + professore.getCognome(),
+            classe.getId(), "CLASSE", msg
+        );
+        return toIscrizioneDto(aggiornata);
     }
 
     @Transactional
@@ -156,8 +212,20 @@ public class ClasseCorsoService {
         a.setClasse(classe);
         a.setAutore(autore);
         a.setTitolo(form.getTitolo());
-        a.setContenuto(form.getContenuto());
-        return toAnnuncioDto(annuncioRepo.save(a));
+        String contenuto = form.getContenuto();
+        a.setContenuto(contenuto != null ? contenuto : "");
+        if (form.getAllegati() != null) a.setAllegati(new ArrayList<>(form.getAllegati()));
+        AnnuncioDto dto = toAnnuncioDto(annuncioRepo.save(a));
+
+        String attoreNome = autore.getNome() + " " + autore.getCognome();
+        String msg = "Nuovo annuncio in \"" + classe.getNome() + "\": " + form.getTitolo();
+        iscrizioneRepo.findByClasse_IdAndStato(classeId, StatoIscrizione.APPROVATA)
+            .forEach(isc -> notificaService.crea(
+                isc.getStudente().getUsername(), "ANNUNCIO",
+                autore.getUsername(), attoreNome,
+                dto.getId(), "ANNUNCIO", msg
+            ));
+        return dto;
     }
 
     @Transactional(readOnly = true)
@@ -165,6 +233,31 @@ public class ClasseCorsoService {
         return annuncioRepo.findByClasse_IdOrderByCreatedAtDesc(classeId).stream()
                 .map(this::toAnnuncioDto)
                 .collect(Collectors.toList());
+    }
+
+    public Map<String, String> uploadAllegatoAnnuncio(MultipartFile file) {
+        if (file.isEmpty()) throw new RuntimeException("File vuoto");
+        if (file.getSize() > MAX_ALLEGATO_SIZE) throw new RuntimeException("File troppo grande (max 10 MB)");
+        String mimeType = file.getContentType();
+        if (mimeType == null || !ALLOWED_MIME.contains(mimeType))
+            throw new RuntimeException("Tipo file non consentito: " + mimeType);
+        String originalName = file.getOriginalFilename();
+        String ext = (originalName != null && originalName.contains("."))
+                ? originalName.substring(originalName.lastIndexOf('.')) : "";
+        String nomeFile = UUID.randomUUID() + ext;
+        try {
+            Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
+            Files.createDirectories(uploadPath);
+            Files.copy(file.getInputStream(), uploadPath.resolve(nomeFile));
+        } catch (IOException e) {
+            throw new RuntimeException("Errore nel salvataggio del file", e);
+        }
+        String tipo = mimeType.startsWith("image/") ? "IMAGE" : "DOCUMENT";
+        return Map.of(
+            "url", "/uploads/" + nomeFile,
+            "nome", originalName != null ? originalName : nomeFile,
+            "tipo", tipo
+        );
     }
 
     @Transactional
@@ -177,6 +270,42 @@ public class ClasseCorsoService {
             throw new RuntimeException("Non autorizzato");
         }
         annuncioRepo.delete(a);
+    }
+
+    // ── Commenti annunci ─────────────────────────────────────────
+
+    @Transactional
+    public CommentoAnnuncioDto aggiungiCommento(Long classeId, Long annuncioId, String testo, String username) {
+        Annuncio annuncio = annuncioRepo.findById(annuncioId)
+                .orElseThrow(() -> new RuntimeException("Annuncio non trovato"));
+        if (!annuncio.getClasse().getId().equals(classeId))
+            throw new RuntimeException("Annuncio non appartiene a questa classe");
+        Utente autore = utenteRepo.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Utente non trovato"));
+        CommentoAnnuncio c = new CommentoAnnuncio();
+        c.setAnnuncio(annuncio);
+        c.setAutore(autore);
+        c.setTesto(testo);
+        return toCommentoAnnuncioDto(commentoAnnuncioRepo.save(c));
+    }
+
+    @Transactional(readOnly = true)
+    public List<CommentoAnnuncioDto> listaCommenti(Long classeId, Long annuncioId) {
+        return commentoAnnuncioRepo.findByAnnuncio_IdOrderByCreatedAtAsc(annuncioId).stream()
+                .map(this::toCommentoAnnuncioDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void eliminaCommento(Long classeId, Long annuncioId, Long commentoId, String username) {
+        CommentoAnnuncio c = commentoAnnuncioRepo.findById(commentoId)
+                .orElseThrow(() -> new RuntimeException("Commento non trovato"));
+        if (!c.getAnnuncio().getId().equals(annuncioId))
+            throw new RuntimeException("Commento non appartiene a questo annuncio");
+        boolean isAutore = c.getAutore().getUsername().equals(username);
+        boolean isProfessore = c.getAnnuncio().getClasse().getProfessore().getUsername().equals(username);
+        if (!isAutore && !isProfessore) throw new RuntimeException("Non autorizzato");
+        commentoAnnuncioRepo.delete(c);
     }
 
     // ── Materiali ────────────────────────────────────────────────
@@ -350,7 +479,20 @@ public class ClasseCorsoService {
         dto.setAutoreNome(a.getAutore().getNome() + " " + a.getAutore().getCognome());
         dto.setTitolo(a.getTitolo());
         dto.setContenuto(a.getContenuto());
+        dto.setAllegati(new ArrayList<>(a.getAllegati()));
+        dto.setNumeroCommenti((int) commentoAnnuncioRepo.countByAnnuncio_Id(a.getId()));
         dto.setCreatedAt(a.getCreatedAt());
+        return dto;
+    }
+
+    private CommentoAnnuncioDto toCommentoAnnuncioDto(CommentoAnnuncio c) {
+        CommentoAnnuncioDto dto = new CommentoAnnuncioDto();
+        dto.setId(c.getId());
+        dto.setAnnuncioId(c.getAnnuncio().getId());
+        dto.setAutoreUsername(c.getAutore().getUsername());
+        dto.setAutoreNome(c.getAutore().getNome() + " " + c.getAutore().getCognome());
+        dto.setTesto(c.getTesto());
+        dto.setCreatedAt(c.getCreatedAt());
         return dto;
     }
 

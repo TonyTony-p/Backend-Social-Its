@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -162,9 +163,19 @@ public class PostService {
         if (limit <= 0 || limit > 60)
             throw new IllegalArgumentException("Il limite deve essere tra 1 e 60");
         Pageable pageable = PageRequest.of(0, limit);
-        return postRepo.findPostsOrderByLikesDesc(pageable).stream()
+        // Prima cerca negli ultimi 7 giorni
+        LocalDateTime since7 = LocalDateTime.now().minusDays(7);
+        List<PostDto> risultati = postRepo.findTrendingPostsSince(since7, pageable).stream()
                 .map(DtoMapper::toPostDtoForTendenze)
                 .collect(Collectors.toList());
+        // Se non ci sono abbastanza post recenti, allarga a 30 giorni
+        if (risultati.size() < limit / 2) {
+            LocalDateTime since30 = LocalDateTime.now().minusDays(30);
+            risultati = postRepo.findTrendingPostsSince(since30, pageable).stream()
+                    .map(DtoMapper::toPostDtoForTendenze)
+                    .collect(Collectors.toList());
+        }
+        return risultati;
     }
 
     @Transactional
