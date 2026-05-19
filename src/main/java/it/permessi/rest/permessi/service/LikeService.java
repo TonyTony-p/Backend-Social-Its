@@ -90,7 +90,7 @@ public class LikeService {
     
     public List<PostDto> getLikedPostsByUsername(String username) {
         return likeRepo.findPostsLikedByUsername(username).stream()
-                .map(DtoMapper::toPostDtoLight)
+                .map(DtoMapper::toPostDtoForProfile)
                 .collect(Collectors.toList());
     }
 
