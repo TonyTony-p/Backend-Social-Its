@@ -22,42 +22,42 @@ public class RuoloController {
 
     /** Crea ruolo. */
     @PostMapping
-    @PreAuthorize("hasAuthority('RUOLO_CREATE')")
+    @PreAuthorize("hasAuthority('RUOLO_CREATE') or hasAuthority('ADMIN')")
     public RuoloDto create(@Valid @RequestBody RuoloFormDto form) {
         return service.create(form);
     }
 
     /** Aggiorna ruolo (id nel body). */
     @PutMapping
-    @PreAuthorize("hasAuthority('RUOLO_UPDATE')")
+    @PreAuthorize("hasAuthority('RUOLO_UPDATE') or hasAuthority('ADMIN')")
     public RuoloDto update(@Valid @RequestBody RuoloFormDto form) {
         return service.update(form);
     }
 
     /** Elimina ruolo (id nel body). */
     @DeleteMapping
-    @PreAuthorize("hasAuthority('RUOLO_DELETE')")
+    @PreAuthorize("hasAuthority('RUOLO_DELETE') or hasAuthority('ADMIN')")
     public void delete(@Valid @RequestBody IdRequest req) {
         service.delete(req.getId());
     }
 
     /** Dettaglio ruolo. */
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('RUOLO_READ')")
+    @PreAuthorize("hasAuthority('RUOLO_READ') or hasAuthority('ADMIN')")
     public RuoloDto get(@PathVariable Long id) {
         return service.getById(id);
     }
 
     /** Lista paginata ruoli. */
     @GetMapping
-    @PreAuthorize("hasAuthority('RUOLO_READ')")
+    @PreAuthorize("hasAuthority('RUOLO_READ') or hasAuthority('ADMIN')")
     public PageResponse<RuoloDto> list(Pageable pageable) {
         return service.list(pageable);
     }
 
     /** Lista completa (non paginata). */
     @GetMapping("/tutti")
-    @PreAuthorize("hasAuthority('RUOLO_READ')")
+    @PreAuthorize("hasAuthority('RUOLO_READ') or hasAuthority('ADMIN')")
     public List<RuoloDto> listAll() {
         return service.listAll();
     }

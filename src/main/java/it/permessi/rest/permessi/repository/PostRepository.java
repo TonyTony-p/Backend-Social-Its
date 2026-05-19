@@ -13,6 +13,7 @@ import it.permessi.rest.permessi.entity.Post;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByUtenteId(Long idUtente);
+    List<Post> findByUtenteUsernameOrderByDataOraDesc(String username);
 
     Page<Post> findAllByOrderByDataOraDesc(Pageable pageable);
 

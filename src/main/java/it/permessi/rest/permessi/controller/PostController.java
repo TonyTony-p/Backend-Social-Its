@@ -96,4 +96,10 @@ public class PostController {
         var posts = service.getPostDaSeguiti(userDetails.getUsername());
         return ResponseEntity.ok(posts);
     }
+
+    @GetMapping("/utente/{username}")
+    public ResponseEntity<List<PostDto>> getPostByUsername(@PathVariable String username) {
+        var posts = service.getPostByUsername(username);
+        return ResponseEntity.ok(posts);
+    }
 }

@@ -391,6 +391,20 @@ public class DtoMapper {
     
     
     
+    public static ProfiloDto toProfiloDtoLight(Utente u) {
+        if (u == null) return null;
+        ProfiloDto dto = new ProfiloDto();
+        dto.setId(u.getId());
+        dto.setNome(u.getNome());
+        dto.setCognome(u.getCognome());
+        dto.setUsername(u.getUsername());
+        dto.setBio(u.getBio());
+        dto.setFotoProfilo(u.getFotoProfilo());
+        dto.setMemberDal(u.getCreatedAt());
+        if (u.getRuolo() != null) dto.setRuolo(u.getRuolo().getNome());
+        return dto;
+    }
+
     public static ProfiloDto toProfiloDto(Utente u) {
         if (u == null) return null;
         ProfiloDto dto = new ProfiloDto();
