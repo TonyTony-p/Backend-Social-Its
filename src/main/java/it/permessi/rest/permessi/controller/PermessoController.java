@@ -22,42 +22,42 @@ public class PermessoController {
 
     /** Crea permesso. */
     @PostMapping
-    @PreAuthorize("hasAuthority('PERMESSO_CREATE')")
+    @PreAuthorize("hasAuthority('PERMESSO_CREATE') or hasAuthority('ADMIN')")
     public PermessoDto create(@Valid @RequestBody PermessoFormDto form) {
         return service.create(form);
     }
 
     /** Aggiorna permesso (id nel body). */
     @PutMapping
-    @PreAuthorize("hasAuthority('PERMESSO_UPDATE')")
+    @PreAuthorize("hasAuthority('PERMESSO_UPDATE') or hasAuthority('ADMIN')")
     public PermessoDto update(@Valid @RequestBody PermessoFormDto form) {
         return service.update(form);
     }
 
     /** Elimina permesso (id nel body). */
     @DeleteMapping
-    @PreAuthorize("hasAuthority('PERMESSO_DELETE')")
+    @PreAuthorize("hasAuthority('PERMESSO_DELETE') or hasAuthority('ADMIN')")
     public void delete(@Valid @RequestBody IdRequest req) {
         service.delete(req.getId());
     }
 
     /** Dettaglio permesso. */
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('PERMESSO_READ')")
+    @PreAuthorize("hasAuthority('PERMESSO_READ') or hasAuthority('ADMIN')")
     public PermessoDto get(@PathVariable Long id) {
         return service.getById(id);
     }
 
     /** Lista paginata permessi. */
     @GetMapping
-    @PreAuthorize("hasAuthority('PERMESSO_READ')")
+    @PreAuthorize("hasAuthority('PERMESSO_READ') or hasAuthority('ADMIN')")
     public PageResponse<PermessoDto> list(Pageable pageable) {
         return service.list(pageable);
     }
 
     /** Lista completa (non paginata). */
     @GetMapping("/tutti")
-    @PreAuthorize("hasAuthority('PERMESSO_READ')")
+    @PreAuthorize("hasAuthority('PERMESSO_READ') or hasAuthority('ADMIN')")
     public List<PermessoDto> listAll() {
         return service.listAll();
     }

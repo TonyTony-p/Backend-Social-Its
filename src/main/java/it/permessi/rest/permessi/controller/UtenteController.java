@@ -14,7 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -103,11 +105,19 @@ public class UtenteController {
         return ResponseEntity.ok(service.searchProfiles(q));
     }
 
-    /** Aggiorna il proprio profilo (bio, foto, dati personali). */
+    /** Aggiorna il proprio profilo (bio, foto URL, dati personali). */
     @PutMapping("/my-profile")
     public ResponseEntity<ProfiloDto> updateMyProfilo(
             @Valid @RequestBody ProfiloFormDto form,
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(service.updateMyProfilo(userDetails.getUsername(), form));
+    }
+
+    /** Carica una foto profilo (file multipart). */
+    @PostMapping(value = "/my-profile/foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ProfiloDto> uploadFotoProfilo(
+            @RequestParam("foto") MultipartFile foto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(service.uploadFotoProfilo(userDetails.getUsername(), foto));
     }
 }
