@@ -19,19 +19,19 @@ public class IstitutoController {
     @Autowired private IstitutoService service;
 
     @PostMapping("/professori")
-    @PreAuthorize("hasAuthority('PROFESSORE_CREATE')")
+    @PreAuthorize("hasAuthority('PROFESSORE_CREATE') or hasAuthority('ADMIN')")
     public ResponseEntity<UtenteDto> creaProfessore(@Valid @RequestBody CreaProfessoreRequest req) {
         return ResponseEntity.status(201).body(service.creaProfessore(req));
     }
 
     @GetMapping("/professori")
-    @PreAuthorize("hasAuthority('PROFESSORE_CREATE') or hasAuthority('UTENTE_READ')")
+    @PreAuthorize("hasAuthority('PROFESSORE_CREATE') or hasAuthority('UTENTE_READ') or hasAuthority('ADMIN')")
     public ResponseEntity<List<UtenteDto>> listaProfessori() {
         return ResponseEntity.ok(service.listaProfessori());
     }
 
     @PutMapping("/professori/{id}")
-    @PreAuthorize("hasAuthority('PROFESSORE_CREATE') or hasAuthority('UTENTE_UPDATE')")
+    @PreAuthorize("hasAuthority('PROFESSORE_CREATE') or hasAuthority('UTENTE_UPDATE') or hasAuthority('ADMIN')")
     public ResponseEntity<UtenteDto> aggiornaProfessore(
             @PathVariable Long id,
             @RequestBody AggiornaProfessoreRequest req) {

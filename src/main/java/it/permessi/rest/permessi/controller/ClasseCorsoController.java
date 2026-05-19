@@ -76,6 +76,12 @@ public class ClasseCorsoController {
         return ResponseEntity.ok(service.mieclassi(userDetails.getUsername()));
     }
 
+    @GetMapping("/admin/tutte")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<List<ClasseCorsoDto>> tutteLeClassi() {
+        return ResponseEntity.ok(service.listaTutte());
+    }
+
     // ── Iscrizioni ───────────────────────────────────────────────
 
     @PostMapping("/{id}/iscriviti")

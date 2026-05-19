@@ -43,7 +43,7 @@ public class UtenteController {
 
     /** Elimina utente (id nel body). */
     @DeleteMapping
-    @PreAuthorize("hasAuthority('UTENTE_DELETE')")
+    @PreAuthorize("hasAuthority('UTENTE_DELETE') or hasAuthority('ADMIN')")
     public void delete(@Valid @RequestBody IdRequest req) {
         service.delete(req.getId());
     }
