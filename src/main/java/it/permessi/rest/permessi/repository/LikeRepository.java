@@ -16,4 +16,7 @@ public interface LikeRepository extends JpaRepository <Like, Long>{
 	Optional<Like> findByUtenteAndPost(Utente utente, Post post);
 	Page<Like> findByUtente(Utente utente, Pageable pageable);
 	Page<Like> findByPost(Post post, Pageable pageable);
+
+	@org.springframework.data.jpa.repository.Query("SELECT l.post FROM Like l WHERE l.utente.username = :username ORDER BY l.post.idPost DESC")
+	java.util.List<Post> findPostsLikedByUsername(@org.springframework.data.repository.query.Param("username") String username);
 }

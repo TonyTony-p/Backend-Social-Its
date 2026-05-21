@@ -187,6 +187,12 @@ public class PostService {
                 .collect(Collectors.toList());
     }
 
+    public List<PostDto> getPostByUsername(String username) {
+        return postRepo.findByUtenteUsernameOrderByDataOraDesc(username).stream()
+                .map(DtoMapper::toPostDtoLight)
+                .collect(Collectors.toList());
+    }
+
     @Transactional(readOnly = true)
     public List<PostDto> getPostDaSeguiti(String username) {
         List<String> usernames = segueService.getSeguitiUsernames(username);

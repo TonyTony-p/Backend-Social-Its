@@ -25,21 +25,21 @@ public class RuoloPermessoController {
 
     /** Restituisce tutti i permessi di un ruolo (non paginato). */
     @GetMapping("/ruolo/{ruoloId}")
-    @PreAuthorize("hasAuthority('RUOLO_READ')")
+    @PreAuthorize("hasAuthority('RUOLO_READ') or hasAuthority('ADMIN')")
     public List<PermessoDto> listByRuolo(@PathVariable Long ruoloId) {
         return service.listPermessiByRuolo(ruoloId);
     }
 
     /** Crea l'associazione ruolo-permesso. */
     @PostMapping
-    @PreAuthorize("hasAuthority('RUOLO_UPDATE')")
+    @PreAuthorize("hasAuthority('RUOLO_UPDATE') or hasAuthority('ADMIN')")
     public RuoloDto create(@Valid @RequestBody RuoloPermessoRequest req) {
         return service.creaAssociazione(req);
     }
 
     /** Elimina l'associazione ruolo-permesso. */
     @DeleteMapping
-    @PreAuthorize("hasAuthority('RUOLO_UPDATE')")
+    @PreAuthorize("hasAuthority('RUOLO_UPDATE') or hasAuthority('ADMIN')")
     public RuoloDto delete(@Valid @RequestBody RuoloPermessoRequest req) {
         return service.eliminaAssociazione(req);
     }

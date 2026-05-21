@@ -106,6 +106,13 @@ public class ClasseCorsoService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<ClasseCorsoDto> listaTutte() {
+        return classeRepo.findAll().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
     // ── Iscrizioni ───────────────────────────────────────────────
 
     @Transactional

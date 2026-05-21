@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import it.permessi.rest.permessi.dto.LikeDto;
 import it.permessi.rest.permessi.dto.LikeFormDto;
+import it.permessi.rest.permessi.dto.PostDto;
 import it.permessi.rest.permessi.service.LikeService;
+import java.util.List;
 import jakarta.validation.Valid;
 
 @RestController
@@ -54,6 +56,11 @@ public class LikeController {
     }
 	
 	
+    @GetMapping("/utente/{username}")
+    public ResponseEntity<List<PostDto>> getLikedPostsByUsername(@PathVariable String username) {
+        return ResponseEntity.ok(service.getLikedPostsByUsername(username));
+    }
+
     @DeleteMapping
     @PreAuthorize("hasAuthority('LIKE_DELETE')")
     public ResponseEntity<Void> rimuoviLike(@Valid @RequestBody LikeFormDto form,
