@@ -61,16 +61,16 @@ public class NotificaService {
         notificaRepo.save(n);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<NotificaDto> getNotifiche(String username, int page, int size) {
         PageRequest pr = PageRequest.of(page, Math.min(size, 50));
         return notificaRepo.findByDestinatario_UsernameOrderByCreatedAtDesc(username, pr)
                 .stream().map(this::toDto).collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public long contaNonLette(String username) {
-        return notificaRepo.countByDestinatario_UsernameAndLettaFalse(username);
+        return notificaRepo.countNonLette(username);
     }
 
     @Transactional

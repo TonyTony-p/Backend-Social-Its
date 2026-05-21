@@ -465,13 +465,19 @@ public class ClasseCorsoService {
     private IscrizioneClasseDto toIscrizioneDto(IscrizioneClasse i) {
         IscrizioneClasseDto dto = new IscrizioneClasseDto();
         dto.setId(i.getId());
-        dto.setClasseId(i.getClasse().getId());
-        dto.setClasseNome(i.getClasse().getNome());
-        if (i.getClasse().getProfessore() != null) {
-            dto.setProfessoreNome(i.getClasse().getProfessore().getNome() + " " + i.getClasse().getProfessore().getCognome());
+        ClasseCorso classe = i.getClasse();
+        if (classe != null) {
+            dto.setClasseId(classe.getId());
+            dto.setClasseNome(classe.getNome());
+            if (classe.getProfessore() != null) {
+                dto.setProfessoreNome(classe.getProfessore().getNome() + " " + classe.getProfessore().getCognome());
+            }
         }
-        dto.setStudenteUsername(i.getStudente().getUsername());
-        dto.setStudenteNome(i.getStudente().getNome() + " " + i.getStudente().getCognome());
+        Utente studente = i.getStudente();
+        if (studente != null) {
+            dto.setStudenteUsername(studente.getUsername());
+            dto.setStudenteNome(studente.getNome() + " " + studente.getCognome());
+        }
         dto.setStato(i.getStato());
         dto.setDataRichiesta(i.getDataRichiesta());
         dto.setDataRisposta(i.getDataRisposta());

@@ -86,7 +86,7 @@ public class UtenteService {
     /** Lista completa non paginata (mapper light). */
     @Transactional(readOnly = true)
     public List<UtenteDto> listAll() {
-        return repo.findAll().stream()
+        return repo.findAllWithRuolo().stream()
                 .map(DtoMapper::toUtenteDto)
                 .collect(Collectors.toList());
     }
