@@ -333,7 +333,7 @@ public class DtoMapper {
         PostDto dto = new PostDto();
         dto.setId(p.getIdPost());
         dto.setIdUtente(p.getUtente().getId());
-        dto.setNomeUtente(p.getUtente().getNome());
+        dto.setNomeUtente(p.getUtente().getNome() + " " + p.getUtente().getCognome());
         dto.setUsernameUtente(p.getUtente().getUsername());
         dto.setContenuto(p.getContenuto());
         dto.setDataOra(p.getDataOra());
