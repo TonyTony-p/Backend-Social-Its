@@ -86,7 +86,7 @@ public class UtenteService {
     /** Lista completa non paginata (mapper light). */
     @Transactional(readOnly = true)
     public List<UtenteDto> listAll() {
-        return repo.findAll().stream()
+        return repo.findAllWithRuolo().stream()
                 .map(DtoMapper::toUtenteDto)
                 .collect(Collectors.toList());
     }
@@ -200,6 +200,18 @@ public class UtenteService {
                 .orElseThrow(() -> new RuntimeException("Ruolo non trovato"));
         u.setRuolo(ruolo);
     }
-    
-    
+
+    @Transactional
+    public void cambiaPassword(String username, String vecchiaPassword, String nuovaPassword) {
+        Utente u = repo.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Utente non trovato"));
+        if (!encoder.matches(vecchiaPassword, u.getPassword())) {
+            throw new RuntimeException("Password attuale non corretta");
+        }
+        if (nuovaPassword == null || nuovaPassword.trim().length() < 6) {
+            throw new RuntimeException("La nuova password deve contenere almeno 6 caratteri");
+        }
+        u.setPassword(encoder.encode(nuovaPassword));
+        repo.save(u);
+    }
 }

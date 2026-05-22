@@ -54,7 +54,7 @@ public class Utente {
     private String fotoProfilo;
 
     /** Ruolo assegnato all'utente. */
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "ruolo_id")
     private Ruolo ruolo;
 

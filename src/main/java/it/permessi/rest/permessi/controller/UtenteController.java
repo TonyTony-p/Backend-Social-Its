@@ -1,5 +1,6 @@
 package it.permessi.rest.permessi.controller;
 
+import it.permessi.rest.permessi.dto.CambiaPasswordDto;
 import it.permessi.rest.permessi.dto.PageResponse;
 import it.permessi.rest.permessi.dto.IdRequest;
 import it.permessi.rest.permessi.dto.ProfiloDto;
@@ -119,5 +120,15 @@ public class UtenteController {
             @RequestParam("foto") MultipartFile foto,
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(service.uploadFotoProfilo(userDetails.getUsername(), foto));
+    }
+
+    /** Cambia la password dell'utente autenticato. */
+    @PutMapping("/me/password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> cambiaPassword(
+            @RequestBody CambiaPasswordDto dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        service.cambiaPassword(userDetails.getUsername(), dto.getVecchiaPassword(), dto.getNuovaPassword());
+        return ResponseEntity.noContent().build();
     }
 }
