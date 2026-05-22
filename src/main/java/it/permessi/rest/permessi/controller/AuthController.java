@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 /** Controller REST per autenticazione: delega tutta la logica ad AuthService. */
 @RestController
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = "*")
 @RequestMapping("/api/auth")
 public class AuthController {
 

@@ -11,11 +11,14 @@ import java.util.List;
 
 public interface NotificaRepository extends JpaRepository<Notifica, Long> {
 
-    List<Notifica> findByDestinatario_UsernameOrderByCreatedAtDesc(String username, Pageable pageable);
+    @Query(value = "SELECT * FROM notifiche n WHERE n.destinatario_id = (SELECT id FROM utenti WHERE username = :username) ORDER BY n.created_at DESC", nativeQuery = true)
+    List<Notifica> findByDestinatario_UsernameOrderByCreatedAtDesc(@Param("username") String username, Pageable pageable);
 
-    long countByDestinatario_UsernameAndLettaFalse(String username);
+    @Query(value = "SELECT count(*) FROM notifiche n WHERE n.destinatario_id = (SELECT id FROM utenti WHERE username = :username) AND n.letta = 0", nativeQuery = true)
+    long countNonLette(@Param("username") String username);
 
-    List<Notifica> findByDestinatario_UsernameAndLettaFalse(String username);
+    @Query(value = "SELECT * FROM notifiche n WHERE n.destinatario_id = (SELECT id FROM utenti WHERE username = :username) AND n.letta = 0", nativeQuery = true)
+    List<Notifica> findNonLette(@Param("username") String username);
 
     @Modifying
     @Query("UPDATE Notifica n SET n.letta = true WHERE n.destinatario.username = :username AND n.letta = false")

@@ -13,8 +13,13 @@ import java.util.Optional;
 public interface UtenteRepository extends JpaRepository<Utente, Long> {
     Optional<Utente> findByUsername(String username);
 
-    Optional<Utente> findWithPostsById(Long id);
+    @Query("SELECT u FROM Utente u LEFT JOIN FETCH u.posts WHERE u.id = :id")
+    Optional<Utente> findWithPostsById(@Param("id") Long id);
+
     Optional<Utente> findByEmail(String email);
+
+    @Query("SELECT u FROM Utente u LEFT JOIN FETCH u.ruolo")
+    List<Utente> findAllWithRuolo();
 
     @Query("SELECT u FROM Utente u LEFT JOIN FETCH u.posts WHERE u.username = :username")
     Optional<Utente> findWithPostsByUsername(@Param("username") String username);
