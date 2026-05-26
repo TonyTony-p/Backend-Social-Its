@@ -32,7 +32,7 @@ public class MessaggioService {
     }
 
     @Transactional
-    public ConversazioneDto getOCreaConversazione(String currentUsername, String altroUsername) {
+    public ConversazioneDto getOCreaConversazione(String currentUsername, String altroUsername, Long after) {
         Utente current = utenteRepo.findByUsername(currentUsername)
                 .orElseThrow(() -> new RuntimeException("Utente non trovato: " + currentUsername));
         Utente altro = utenteRepo.findByUsername(altroUsername)
@@ -54,7 +54,10 @@ public class MessaggioService {
         msgRepo.segnaComeLetti(conv.getId(), currentUsername);
 
         ConversazioneDto dto = toSummaryDto(conv, currentUsername);
-        dto.setMessaggi(conv.getMessaggi().stream().map(this::toMsgDto).collect(Collectors.toList()));
+        dto.setMessaggi(conv.getMessaggi().stream()
+                .filter(m -> after == null || m.getId() > after)
+                .map(this::toMsgDto)
+                .collect(Collectors.toList()));
         return dto;
     }
 
@@ -67,7 +70,7 @@ public class MessaggioService {
         Utente mittenteUtente = utenteRepo.findByUsername(mittente)
                 .orElseThrow(() -> new RuntimeException("Utente non trovato: " + mittente));
 
-        ConversazioneDto convDto = getOCreaConversazione(mittente, destinatarioUsername);
+        ConversazioneDto convDto = getOCreaConversazione(mittente, destinatarioUsername, null);
         Conversazione conv = convRepo.findById(convDto.getId())
                 .orElseThrow(() -> new RuntimeException("Conversazione non trovata"));
 

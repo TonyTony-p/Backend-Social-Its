@@ -47,12 +47,15 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200")); // Frontend Angular
+        // allowedOriginPatterns("*") è richiesto quando allowCredentials=true (allowedOrigins("*") non è compatibile)
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:*",      // Expo web + Angular su qualsiasi porta
+                "http://192.168.1.*:*"     // dispositivi fisici sulla LAN
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
-        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
