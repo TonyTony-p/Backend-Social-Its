@@ -48,7 +48,10 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // allowedOriginPatterns("*") è richiesto quando allowCredentials=true (allowedOrigins("*") non è compatibile)
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200")); // Frontend Angular
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:*",      // Expo web + Angular su qualsiasi porta
+                "http://192.168.1.*:*"     // dispositivi fisici sulla LAN
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);

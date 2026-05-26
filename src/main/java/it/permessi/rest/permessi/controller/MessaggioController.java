@@ -2,13 +2,16 @@ package it.permessi.rest.permessi.controller;
 
 import it.permessi.rest.permessi.dto.ConversazioneDto;
 import it.permessi.rest.permessi.dto.MessaggioDto;
+import it.permessi.rest.permessi.service.ChatSseService;
 import it.permessi.rest.permessi.service.MessaggioService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
@@ -19,6 +22,7 @@ import java.util.Map;
 public class MessaggioController {
 
     @Autowired private MessaggioService service;
+    @Autowired private ChatSseService sseService;
 
     @GetMapping("/conversazioni")
     public ResponseEntity<List<ConversazioneDto>> getConversazioni(@AuthenticationPrincipal UserDetails user) {
@@ -27,8 +31,10 @@ public class MessaggioController {
 
     @GetMapping("/conversazioni/{username}")
     public ResponseEntity<ConversazioneDto> getConversazione(
-            @PathVariable String username, @AuthenticationPrincipal UserDetails user) {
-        return ResponseEntity.ok(service.getOCreaConversazione(user.getUsername(), username));
+            @PathVariable String username,
+            @RequestParam(required = false) Long after,
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(service.getOCreaConversazione(user.getUsername(), username, after));
     }
 
     /** Invia un messaggio; il body può contenere testo e replyToId opzionale. */
@@ -40,7 +46,17 @@ public class MessaggioController {
         String testo = (String) body.get("testo");
         Long replyToId = body.get("replyToId") != null
                 ? Long.parseLong(body.get("replyToId").toString()) : null;
-        return ResponseEntity.ok(service.invia(user.getUsername(), username, testo, replyToId));
+        MessaggioDto dto = service.invia(user.getUsername(), username, testo, replyToId);
+        sseService.notifica(username, dto);
+        return ResponseEntity.ok(dto);
+    }
+
+    /** Stream SSE: il client si iscrive per ricevere nuovi messaggi in push. */
+    @GetMapping(value = "/stream/{otherUsername}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter stream(
+            @PathVariable String otherUsername,
+            @AuthenticationPrincipal UserDetails user) {
+        return sseService.subscribe(user.getUsername());
     }
 
     @PutMapping("/conversazioni/{username}/letti")

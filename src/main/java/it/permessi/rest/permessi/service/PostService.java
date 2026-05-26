@@ -159,23 +159,27 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public List<PostDto> getTendenze(int limit) {
-        if (limit <= 0 || limit > 60)
-            throw new IllegalArgumentException("Il limite deve essere tra 1 e 60");
-        Pageable pageable = PageRequest.of(0, limit);
-        // Prima cerca negli ultimi 7 giorni
-        LocalDateTime since7 = LocalDateTime.now().minusDays(7);
-        List<PostDto> risultati = postRepo.findTrendingPostsSince(since7, pageable).stream()
-                .map(DtoMapper::toPostDtoForTendenze)
-                .collect(Collectors.toList());
-        // Se non ci sono abbastanza post recenti, allarga a 30 giorni
-        if (risultati.size() < limit / 2) {
-            LocalDateTime since30 = LocalDateTime.now().minusDays(30);
-            risultati = postRepo.findTrendingPostsSince(since30, pageable).stream()
+    public List<PostDto> getTendenze(int size, int page) {
+        int safeSize = Math.min(Math.max(size, 1), 60);
+        Pageable pageable = PageRequest.of(page, safeSize);
+        if (page == 0) {
+            LocalDateTime since7 = LocalDateTime.now().minusDays(7);
+            List<PostDto> risultati = postRepo.findTrendingPostsSince(since7, pageable).stream()
                     .map(DtoMapper::toPostDtoForTendenze)
                     .collect(Collectors.toList());
+            if (risultati.size() < safeSize / 2) {
+                LocalDateTime since30 = LocalDateTime.now().minusDays(30);
+                risultati = postRepo.findTrendingPostsSince(since30, pageable).stream()
+                        .map(DtoMapper::toPostDtoForTendenze)
+                        .collect(Collectors.toList());
+            }
+            return risultati;
         }
-        return risultati;
+        // Pagine successive: finestra fissa 30 giorni
+        LocalDateTime since30 = LocalDateTime.now().minusDays(30);
+        return postRepo.findTrendingPostsSince(since30, pageable).stream()
+                .map(DtoMapper::toPostDtoForTendenze)
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -194,10 +198,11 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public List<PostDto> getPostDaSeguiti(String username) {
+    public List<PostDto> getPostDaSeguiti(String username, int page, int size) {
         List<String> usernames = segueService.getSeguitiUsernames(username);
         if (usernames.isEmpty()) return List.of();
-        return postRepo.findByUtenteUsernameIn(usernames).stream()
+        Pageable pageable = PageRequest.of(page, Math.min(size, 50));
+        return postRepo.findByUtenteUsernameIn(usernames, pageable).getContent().stream()
                 .map(p -> enrichWithSondaggio(p, username))
                 .collect(Collectors.toList());
     }

@@ -12,6 +12,8 @@ public class ClasseCorsoDto {
     private String professoreUsername;
     private String professoreNome;
     private long numeroStudenti;
+    private Long istitutoId;
+    private String istitutoNome;
     private Instant createdAt;
 
     public Long getId() { return id; }
@@ -30,6 +32,10 @@ public class ClasseCorsoDto {
     public void setProfessoreNome(String professoreNome) { this.professoreNome = professoreNome; }
     public long getNumeroStudenti() { return numeroStudenti; }
     public void setNumeroStudenti(long numeroStudenti) { this.numeroStudenti = numeroStudenti; }
+    public Long getIstitutoId() { return istitutoId; }
+    public void setIstitutoId(Long istitutoId) { this.istitutoId = istitutoId; }
+    public String getIstitutoNome() { return istitutoNome; }
+    public void setIstitutoNome(String istitutoNome) { this.istitutoNome = istitutoNome; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

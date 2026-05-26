@@ -41,6 +41,7 @@ public class ClasseCorsoService {
     private String uploadDir;
 
     @Autowired private ClasseCorsoRepository classeRepo;
+    @Autowired private IstitutoRepository istitutoRepo;
     @Autowired private IscrizioneClasseRepository iscrizioneRepo;
     @Autowired private AnnuncioRepository annuncioRepo;
     @Autowired private CommentoAnnuncioRepository commentoAnnuncioRepo;
@@ -61,6 +62,9 @@ public class ClasseCorsoService {
         classe.setDescrizione(form.getDescrizione());
         classe.setTipo(form.getTipo());
         classe.setProfessore(professore);
+        if (form.getIstitutoId() != null) {
+            classe.setIstituto(istitutoRepo.findById(form.getIstitutoId()).orElse(null));
+        }
         return toDto(classeRepo.save(classe));
     }
 
@@ -89,6 +93,11 @@ public class ClasseCorsoService {
         classe.setNome(form.getNome());
         classe.setDescrizione(form.getDescrizione());
         classe.setTipo(form.getTipo());
+        if (form.getIstitutoId() != null) {
+            classe.setIstituto(istitutoRepo.findById(form.getIstitutoId()).orElse(null));
+        } else {
+            classe.setIstituto(null);
+        }
         return toDto(classeRepo.save(classe));
     }
 
@@ -458,6 +467,10 @@ public class ClasseCorsoService {
         dto.setTipo(c.getTipo());
         dto.setProfessoreUsername(c.getProfessore().getUsername());
         dto.setProfessoreNome(c.getProfessore().getNome() + " " + c.getProfessore().getCognome());
+        if (c.getIstituto() != null) {
+            dto.setIstitutoId(c.getIstituto().getId());
+            dto.setIstitutoNome(c.getIstituto().getNome());
+        }
         dto.setCreatedAt(c.getCreatedAt());
         return dto;
     }
