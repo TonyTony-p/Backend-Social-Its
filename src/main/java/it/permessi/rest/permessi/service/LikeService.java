@@ -7,12 +7,16 @@ import org.springframework.stereotype.Service;
 
 import it.permessi.rest.permessi.dto.LikeDto;
 import it.permessi.rest.permessi.dto.LikeFormDto;
+import it.permessi.rest.permessi.dto.PostDto;
 import it.permessi.rest.permessi.entity.Like;
 import it.permessi.rest.permessi.entity.Post;
 import it.permessi.rest.permessi.entity.Utente;
 import it.permessi.rest.permessi.mapper.DtoMapper;
 import it.permessi.rest.permessi.repository.LikeRepository;
 import it.permessi.rest.permessi.repository.PostRepository;
+
+import java.util.List;
+import java.util.stream.Collectors;
 import it.permessi.rest.permessi.repository.UtenteRepository;
 
 @Service
@@ -84,6 +88,12 @@ public class LikeService {
         return likesPage.map(like -> DtoMapper.toLikeDtoLight(like));
     }
     
+    public List<PostDto> getLikedPostsByUsername(String username) {
+        return likeRepo.findPostsLikedByUsername(username).stream()
+                .map(DtoMapper::toPostDtoForProfile)
+                .collect(Collectors.toList());
+    }
+
     //rimuovi like
     
     public void rimuovi(LikeFormDto form, String username) {

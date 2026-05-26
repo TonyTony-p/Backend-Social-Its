@@ -16,4 +16,6 @@ public interface ClasseCorsoRepository extends JpaRepository<ClasseCorso, Long> 
 
     @Query("SELECT c FROM ClasseCorso c WHERE c.tipo = 'PUBBLICA' ORDER BY (SELECT COUNT(i) FROM IscrizioneClasse i WHERE i.classe = c AND i.stato = 'APPROVATA') DESC")
     List<ClasseCorso> findTopClassiPubbliche(Pageable pageable);
+
+    long countByIstituto_Id(Long istitutoId);
 }

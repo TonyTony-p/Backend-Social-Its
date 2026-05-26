@@ -63,7 +63,7 @@ public class PostController {
     }
 
     @DeleteMapping("/elimina/{id}")
-    @PreAuthorize("hasAuthority('POST_DELETE')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> elimina(@PathVariable Long id,
                                         @AuthenticationPrincipal UserDetails userDetails) {
         service.delete(id, userDetails);
@@ -84,16 +84,25 @@ public class PostController {
 
     @GetMapping("/tendenze")
     public ResponseEntity<List<PostDto>> getTendenze(
-            @RequestParam(defaultValue = "10") int limit) {
-        var posts = service.getTendenze(limit);
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "0") int page) {
+        var posts = service.getTendenze(size, page);
         return ResponseEntity.ok(posts);
     }
 
     @GetMapping("/seguiti")
     @PreAuthorize("hasAuthority('POST_READ')")
     public ResponseEntity<List<PostDto>> getPostDaSeguiti(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal UserDetails userDetails) {
-        var posts = service.getPostDaSeguiti(userDetails.getUsername());
+        var posts = service.getPostDaSeguiti(userDetails.getUsername(), page, size);
+        return ResponseEntity.ok(posts);
+    }
+
+    @GetMapping("/utente/{username}")
+    public ResponseEntity<List<PostDto>> getPostByUsername(@PathVariable String username) {
+        var posts = service.getPostByUsername(username);
         return ResponseEntity.ok(posts);
     }
 }

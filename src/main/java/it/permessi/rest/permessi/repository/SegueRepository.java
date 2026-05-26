@@ -20,4 +20,10 @@ public interface SegueRepository extends JpaRepository<Segue, Long> {
 
     @Query("SELECT s.seguito.username FROM Segue s WHERE s.seguace.username = :username")
     List<String> findSeguitiUsernamesBySeguace(@Param("username") String username);
+
+    @Query("SELECT s.seguace FROM Segue s WHERE s.seguito.username = :username")
+    List<it.permessi.rest.permessi.entity.Utente> findSeguaciBySeguitoUsername(@Param("username") String username);
+
+    @Query("SELECT s.seguito FROM Segue s WHERE s.seguace.username = :username")
+    List<it.permessi.rest.permessi.entity.Utente> findSeguitiBySeguaceUsername(@Param("username") String username);
 }

@@ -6,12 +6,11 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Entity
-@Table(name = "classi_corso")
+@Table(name = "istituti")
 @EntityListeners(AuditingEntityListener.class)
-public class ClasseCorso {
+public class Istituto {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,20 +22,8 @@ public class ClasseCorso {
     @Column(length = 1000)
     private String descrizione;
 
-    @Column(name = "codice_invito", nullable = false, unique = true)
-    private String codiceInvito;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TipoClasse tipo;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "professore_id", nullable = false)
-    private Utente professore;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "istituto_id")
-    private Istituto istituto;
+    @Column
+    private String citta;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -46,31 +33,16 @@ public class ClasseCorso {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    @PrePersist
-    private void generaCodiceInvito() {
-        if (this.codiceInvito == null) {
-            this.codiceInvito = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
-        }
-    }
-
-    public enum TipoClasse { PUBBLICA, PRIVATA }
-
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
     public String getDescrizione() { return descrizione; }
     public void setDescrizione(String descrizione) { this.descrizione = descrizione; }
-    public String getCodiceInvito() { return codiceInvito; }
-    public void setCodiceInvito(String codiceInvito) { this.codiceInvito = codiceInvito; }
-    public TipoClasse getTipo() { return tipo; }
-    public void setTipo(TipoClasse tipo) { this.tipo = tipo; }
-    public Utente getProfessore() { return professore; }
-    public void setProfessore(Utente professore) { this.professore = professore; }
+    public String getCitta() { return citta; }
+    public void setCitta(String citta) { this.citta = citta; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
-    public Istituto getIstituto() { return istituto; }
-    public void setIstituto(Istituto istituto) { this.istituto = istituto; }
 }

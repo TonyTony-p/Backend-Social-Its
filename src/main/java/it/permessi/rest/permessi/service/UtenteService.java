@@ -10,14 +10,21 @@ import it.permessi.rest.permessi.entity.Utente;
 import it.permessi.rest.permessi.repository.RuoloRepository;
 import it.permessi.rest.permessi.repository.UtenteRepository;
 import it.permessi.rest.permessi.mapper.DtoMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /** Logica di business per Utenti. */
@@ -28,6 +35,9 @@ public class UtenteService {
     @Autowired private RuoloRepository ruoloRepo;
     @Autowired private PasswordEncoder encoder;
     @Lazy @Autowired private SegueService segueService;
+
+    @Value("${app.upload.dir:uploads}")
+    private String uploadDir;
 
     
     
@@ -76,7 +86,7 @@ public class UtenteService {
     /** Lista completa non paginata (mapper light). */
     @Transactional(readOnly = true)
     public List<UtenteDto> listAll() {
-        return repo.findAll().stream()
+        return repo.findAllWithRuolo().stream()
                 .map(DtoMapper::toUtenteDto)
                 .collect(Collectors.toList());
     }
@@ -130,10 +140,32 @@ public class UtenteService {
     /** Ricerca profili per prefisso username (max 10 risultati). */
     @Transactional(readOnly = true)
     public List<ProfiloDto> searchProfiles(String q) {
-        return repo.findByUsername(q.trim()).stream()
+        return repo.searchByUsername(q.trim()).stream()
                 .limit(10)
                 .map(DtoMapper::toProfiloDto)
                 .collect(Collectors.toList());
+    }
+
+    /** Carica la foto profilo sul filesystem e aggiorna l'URL nel profilo. */
+    @Transactional
+    public ProfiloDto uploadFotoProfilo(String username, MultipartFile file) {
+        if (file.isEmpty()) throw new RuntimeException("File vuoto");
+        if (file.getSize() > 5 * 1024 * 1024) throw new RuntimeException("Immagine troppo grande (max 5 MB)");
+        String mime = file.getContentType();
+        if (mime == null || !mime.startsWith("image/")) throw new RuntimeException("Tipo file non valido");
+        String ext = mime.substring(mime.lastIndexOf('/') + 1);
+        String nomeFile = "profilo_" + UUID.randomUUID() + "." + ext;
+        try {
+            Path dir = Paths.get(uploadDir).toAbsolutePath();
+            Files.createDirectories(dir);
+            Files.copy(file.getInputStream(), dir.resolve(nomeFile));
+        } catch (IOException e) {
+            throw new RuntimeException("Errore nel salvataggio della foto", e);
+        }
+        Utente u = repo.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Utente non trovato"));
+        u.setFotoProfilo("/uploads/" + nomeFile);
+        return DtoMapper.toProfiloDto(repo.save(u));
     }
 
     /** Aggiorna i campi modificabili del proprio profilo. */
@@ -168,6 +200,18 @@ public class UtenteService {
                 .orElseThrow(() -> new RuntimeException("Ruolo non trovato"));
         u.setRuolo(ruolo);
     }
-    
-    
+
+    @Transactional
+    public void cambiaPassword(String username, String vecchiaPassword, String nuovaPassword) {
+        Utente u = repo.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Utente non trovato"));
+        if (!encoder.matches(vecchiaPassword, u.getPassword())) {
+            throw new RuntimeException("Password attuale non corretta");
+        }
+        if (nuovaPassword == null || nuovaPassword.trim().length() < 6) {
+            throw new RuntimeException("La nuova password deve contenere almeno 6 caratteri");
+        }
+        u.setPassword(encoder.encode(nuovaPassword));
+        repo.save(u);
+    }
 }

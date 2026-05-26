@@ -1,7 +1,9 @@
 package it.permessi.rest.permessi.service;
 
+import it.permessi.rest.permessi.dto.ProfiloDto;
 import it.permessi.rest.permessi.entity.Segue;
 import it.permessi.rest.permessi.entity.Utente;
+import it.permessi.rest.permessi.mapper.DtoMapper;
 import it.permessi.rest.permessi.repository.SegueRepository;
 import it.permessi.rest.permessi.repository.UtenteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class SegueService {
@@ -62,5 +65,17 @@ public class SegueService {
 
     public List<String> getSeguitiUsernames(String username) {
         return segueRepo.findSeguitiUsernamesBySeguace(username);
+    }
+
+    public List<ProfiloDto> getSeguaci(String username) {
+        return segueRepo.findSeguaciBySeguitoUsername(username).stream()
+                .map(DtoMapper::toProfiloDtoLight)
+                .collect(Collectors.toList());
+    }
+
+    public List<ProfiloDto> getSeguiti(String username) {
+        return segueRepo.findSeguitiBySeguaceUsername(username).stream()
+                .map(DtoMapper::toProfiloDtoLight)
+                .collect(Collectors.toList());
     }
 }

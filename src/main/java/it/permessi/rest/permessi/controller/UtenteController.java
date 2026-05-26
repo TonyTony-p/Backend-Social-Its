@@ -1,5 +1,6 @@
 package it.permessi.rest.permessi.controller;
 
+import it.permessi.rest.permessi.dto.CambiaPasswordDto;
 import it.permessi.rest.permessi.dto.PageResponse;
 import it.permessi.rest.permessi.dto.IdRequest;
 import it.permessi.rest.permessi.dto.ProfiloDto;
@@ -14,7 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -41,7 +44,7 @@ public class UtenteController {
 
     /** Elimina utente (id nel body). */
     @DeleteMapping
-    @PreAuthorize("hasAuthority('UTENTE_DELETE')")
+    @PreAuthorize("hasAuthority('UTENTE_DELETE') or hasAuthority('ADMIN')")
     public void delete(@Valid @RequestBody IdRequest req) {
         service.delete(req.getId());
     }
@@ -103,11 +106,29 @@ public class UtenteController {
         return ResponseEntity.ok(service.searchProfiles(q));
     }
 
-    /** Aggiorna il proprio profilo (bio, foto, dati personali). */
+    /** Aggiorna il proprio profilo (bio, foto URL, dati personali). */
     @PutMapping("/my-profile")
     public ResponseEntity<ProfiloDto> updateMyProfilo(
             @Valid @RequestBody ProfiloFormDto form,
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(service.updateMyProfilo(userDetails.getUsername(), form));
+    }
+
+    /** Carica una foto profilo (file multipart). */
+    @PostMapping(value = "/my-profile/foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ProfiloDto> uploadFotoProfilo(
+            @RequestParam("foto") MultipartFile foto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(service.uploadFotoProfilo(userDetails.getUsername(), foto));
+    }
+
+    /** Cambia la password dell'utente autenticato. */
+    @PutMapping("/me/password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> cambiaPassword(
+            @RequestBody CambiaPasswordDto dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        service.cambiaPassword(userDetails.getUsername(), dto.getVecchiaPassword(), dto.getNuovaPassword());
+        return ResponseEntity.noContent().build();
     }
 }

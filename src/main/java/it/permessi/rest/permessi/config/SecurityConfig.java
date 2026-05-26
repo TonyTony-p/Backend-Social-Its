@@ -4,7 +4,6 @@ import it.permessi.rest.permessi.security.JwtAuthFilter;
 import it.permessi.rest.permessi.security.UserDetailsServiceImpl;
 
 import java.util.Arrays;
-//PROVA
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.*;
 import org.springframework.http.HttpMethod;
@@ -48,12 +47,15 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200")); // Frontend Angular
+        // allowedOriginPatterns("*") è richiesto quando allowCredentials=true (allowedOrigins("*") non è compatibile)
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:*",      // Expo web + Angular su qualsiasi porta
+                "http://192.168.1.*:*"     // dispositivi fisici sulla LAN
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
-        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -66,8 +68,6 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/utenti/*/con-post").permitAll() // ✅ Rende pubblico l'endpoint
-                .requestMatchers("/api/likes/post/**").permitAll() // ✅ Se vuoi anche i like pubblic
                 .requestMatchers(HttpMethod.GET, "/api/post").permitAll()
                 .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                 .anyRequest().authenticated()

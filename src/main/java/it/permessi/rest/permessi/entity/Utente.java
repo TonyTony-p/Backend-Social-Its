@@ -8,6 +8,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,7 +54,7 @@ public class Utente {
     private String fotoProfilo;
 
     /** Ruolo assegnato all'utente. */
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "ruolo_id")
     private Ruolo ruolo;
 
@@ -76,6 +77,9 @@ public class Utente {
     @LastModifiedDate
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    @Column(name = "last_seen")
+    private LocalDateTime lastSeen;
 
     // Getter e Setter
     public Long getId() { 
@@ -210,8 +214,11 @@ public class Utente {
         return updatedAt; 
     }
     
-    public void setUpdatedAt(Instant updatedAt) { 
-        this.updatedAt = updatedAt; 
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
+
+    public LocalDateTime getLastSeen() { return lastSeen; }
+    public void setLastSeen(LocalDateTime lastSeen) { this.lastSeen = lastSeen; }
 
 }

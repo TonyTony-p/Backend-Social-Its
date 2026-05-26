@@ -13,6 +13,7 @@ import it.permessi.rest.permessi.entity.Post;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByUtenteId(Long idUtente);
+    List<Post> findByUtenteUsernameOrderByDataOraDesc(String username);
 
     Page<Post> findAllByOrderByDataOraDesc(Pageable pageable);
 
@@ -23,5 +24,5 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findPostsOrderByLikesDesc(Pageable pageable);
 
     @Query("SELECT p FROM Post p WHERE p.utente.username IN :usernames ORDER BY p.dataOra DESC")
-    List<Post> findByUtenteUsernameIn(@Param("usernames") List<String> usernames);
+    Page<Post> findByUtenteUsernameIn(@Param("usernames") List<String> usernames, Pageable pageable);
 }
