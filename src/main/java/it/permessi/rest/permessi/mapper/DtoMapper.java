@@ -266,6 +266,9 @@ public class DtoMapper {
                 .map(DtoMapper::toCommentoDtoLight)
                 .collect(Collectors.toList());
             dto.setCommenti(commentiDtos);
+            dto.setNumeroCommenti(p.getCommenti().size());
+        } else {
+            dto.setNumeroCommenti(0);
         }
 
         if (p.getAllegati() != null && !p.getAllegati().isEmpty()) {
