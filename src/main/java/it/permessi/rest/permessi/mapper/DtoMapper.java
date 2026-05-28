@@ -431,11 +431,14 @@ public class DtoMapper {
     }
 
     public static CommentoDto toCommentoDtoLight(Commento c) {
+        if (c == null) return null;
         CommentoDto dto = new CommentoDto();
         dto.setIdCommento(c.getIdCommento());
         dto.setTesto(c.getTesto());
         dto.setDataOra(c.getDataOra());
-        dto.setUtente(toUtenteDtoLight(c.getUtente()));
+        try {
+            dto.setUtente(toUtenteDtoLight(c.getUtente()));
+        } catch (Exception ignored) {}
         return dto;
     }
 

@@ -25,6 +25,9 @@ public class Istituto {
     @Column
     private String citta;
 
+    @Column(length = 500)
+    private String url;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -41,6 +44,8 @@ public class Istituto {
     public void setDescrizione(String descrizione) { this.descrizione = descrizione; }
     public String getCitta() { return citta; }
     public void setCitta(String citta) { this.citta = citta; }
+    public String getUrl() { return url; }
+    public void setUrl(String url) { this.url = url; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

@@ -36,6 +36,7 @@ public class GestioneIstitutiService {
         i.setNome(form.getNome());
         i.setDescrizione(form.getDescrizione());
         i.setCitta(form.getCitta());
+        i.setUrl(form.getUrl());
         return toDto(istitutoRepo.save(i));
     }
 
@@ -45,6 +46,7 @@ public class GestioneIstitutiService {
         i.setNome(form.getNome());
         i.setDescrizione(form.getDescrizione());
         i.setCitta(form.getCitta());
+        i.setUrl(form.getUrl());
         return toDto(istitutoRepo.save(i));
     }
 
@@ -64,6 +66,7 @@ public class GestioneIstitutiService {
         dto.setNome(i.getNome());
         dto.setDescrizione(i.getDescrizione());
         dto.setCitta(i.getCitta());
+        dto.setUrl(i.getUrl());
         dto.setNumeroClassi(classeRepo.countByIstituto_Id(i.getId()));
         dto.setCreatedAt(i.getCreatedAt());
         return dto;
