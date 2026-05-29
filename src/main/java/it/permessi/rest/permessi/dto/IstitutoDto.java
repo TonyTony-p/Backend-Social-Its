@@ -7,6 +7,7 @@ public class IstitutoDto {
     private String nome;
     private String descrizione;
     private String citta;
+    private String url;
     private long numeroClassi;
     private Instant createdAt;
 
@@ -18,6 +19,8 @@ public class IstitutoDto {
     public void setDescrizione(String descrizione) { this.descrizione = descrizione; }
     public String getCitta() { return citta; }
     public void setCitta(String citta) { this.citta = citta; }
+    public String getUrl() { return url; }
+    public void setUrl(String url) { this.url = url; }
     public long getNumeroClassi() { return numeroClassi; }
     public void setNumeroClassi(long numeroClassi) { this.numeroClassi = numeroClassi; }
     public Instant getCreatedAt() { return createdAt; }

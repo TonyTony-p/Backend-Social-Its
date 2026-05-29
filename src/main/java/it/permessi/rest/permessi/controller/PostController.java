@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import it.permessi.rest.permessi.dto.PageResponse;
 import it.permessi.rest.permessi.dto.PostDto;
 import it.permessi.rest.permessi.dto.PostFormDto;
 import it.permessi.rest.permessi.service.PostService;
@@ -45,13 +46,12 @@ public class PostController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PostDto>> listaPosts(
+    public ResponseEntity<PageResponse<PostDto>> listaPosts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal UserDetails userDetails) {
         String username = userDetails != null ? userDetails.getUsername() : null;
-        var posts = service.listAll(username, page, size);
-        return ResponseEntity.ok(posts);
+        return ResponseEntity.ok(service.listAll(username, page, size));
     }
 
     @PutMapping
@@ -77,27 +77,29 @@ public class PostController {
     }
 
     @GetMapping("{id}")
-    public ResponseEntity<PostDto> postById(@PathVariable Long id) {
-        var post = service.postById(id);
+    public ResponseEntity<PostDto> postById(@PathVariable Long id,
+                                            @AuthenticationPrincipal UserDetails userDetails) {
+        String username = userDetails != null ? userDetails.getUsername() : null;
+        var post = service.postById(id, username);
         return ResponseEntity.ok(post);
     }
 
     @GetMapping("/tendenze")
-    public ResponseEntity<List<PostDto>> getTendenze(
+    public ResponseEntity<PageResponse<PostDto>> getTendenze(
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "0") int page) {
-        var posts = service.getTendenze(size, page);
-        return ResponseEntity.ok(posts);
+            @RequestParam(defaultValue = "0") int page,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        String username = userDetails != null ? userDetails.getUsername() : null;
+        return ResponseEntity.ok(service.getTendenze(size, page, username));
     }
 
     @GetMapping("/seguiti")
     @PreAuthorize("hasAuthority('POST_READ')")
-    public ResponseEntity<List<PostDto>> getPostDaSeguiti(
+    public ResponseEntity<PageResponse<PostDto>> getPostDaSeguiti(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal UserDetails userDetails) {
-        var posts = service.getPostDaSeguiti(userDetails.getUsername(), page, size);
-        return ResponseEntity.ok(posts);
+        return ResponseEntity.ok(service.getPostDaSeguiti(userDetails.getUsername(), page, size));
     }
 
     @GetMapping("/utente/{username}")

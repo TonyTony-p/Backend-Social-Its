@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import it.permessi.rest.permessi.dto.PageResponse;
 import it.permessi.rest.permessi.dto.PostDto;
 import it.permessi.rest.permessi.dto.PostFormDto;
 import it.permessi.rest.permessi.entity.Allegato;
@@ -89,11 +90,12 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public List<PostDto> listAll(String username, int page, int size) {
+    public PageResponse<PostDto> listAll(String username, int page, int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
-        return postRepo.findAllByOrderByDataOraDesc(pageable).stream()
-                .map(p -> enrichWithSondaggio(p, username))
-                .collect(Collectors.toList());
+        return PageResponse.from(
+            postRepo.findAllByOrderByDataOraDesc(pageable)
+                    .map(p -> enrichWithSondaggio(p, username))
+        );
     }
 
     private PostDto enrichWithSondaggio(Post p, String username) {
@@ -159,27 +161,22 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public List<PostDto> getTendenze(int size, int page) {
+    public PageResponse<PostDto> getTendenze(int size, int page, String username) {
         int safeSize = Math.min(Math.max(size, 1), 60);
         Pageable pageable = PageRequest.of(page, safeSize);
+        org.springframework.data.domain.Page<Post> source;
         if (page == 0) {
             LocalDateTime since7 = LocalDateTime.now().minusDays(7);
-            List<PostDto> risultati = postRepo.findTrendingPostsSince(since7, pageable).stream()
-                    .map(DtoMapper::toPostDtoForTendenze)
-                    .collect(Collectors.toList());
-            if (risultati.size() < safeSize / 2) {
-                LocalDateTime since30 = LocalDateTime.now().minusDays(30);
-                risultati = postRepo.findTrendingPostsSince(since30, pageable).stream()
-                        .map(DtoMapper::toPostDtoForTendenze)
-                        .collect(Collectors.toList());
+            org.springframework.data.domain.Page<Post> page7 = postRepo.findTrendingPostsSince(since7, pageable);
+            if (page7.getContent().size() < safeSize / 2) {
+                source = postRepo.findTrendingPostsSince(LocalDateTime.now().minusDays(30), pageable);
+            } else {
+                source = page7;
             }
-            return risultati;
+        } else {
+            source = postRepo.findTrendingPostsSince(LocalDateTime.now().minusDays(30), pageable);
         }
-        // Pagine successive: finestra fissa 30 giorni
-        LocalDateTime since30 = LocalDateTime.now().minusDays(30);
-        return postRepo.findTrendingPostsSince(since30, pageable).stream()
-                .map(DtoMapper::toPostDtoForTendenze)
-                .collect(Collectors.toList());
+        return PageResponse.from(source.map(p -> enrichWithSondaggio(p, username)));
     }
 
     @Transactional
@@ -198,20 +195,22 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public List<PostDto> getPostDaSeguiti(String username, int page, int size) {
+    public PageResponse<PostDto> getPostDaSeguiti(String username, int page, int size) {
         List<String> usernames = segueService.getSeguitiUsernames(username);
-        if (usernames.isEmpty()) return List.of();
-        Pageable pageable = PageRequest.of(page, Math.min(size, 50));
-        return postRepo.findByUtenteUsernameIn(usernames, pageable).getContent().stream()
-                .map(p -> enrichWithSondaggio(p, username))
-                .collect(Collectors.toList());
+        int safeSize = Math.min(size, 50);
+        if (usernames.isEmpty()) return PageResponse.empty(page, safeSize);
+        Pageable pageable = PageRequest.of(page, safeSize);
+        return PageResponse.from(
+            postRepo.findByUtenteUsernameIn(usernames, pageable)
+                    .map(p -> enrichWithSondaggio(p, username))
+        );
     }
 
     @Transactional(readOnly = true)
-    public PostDto postById(Long idPost) {
+    public PostDto postById(Long idPost, String username) {
         Post post = postRepo.findById(idPost)
             .orElseThrow(() -> new EntityNotFoundException("Post non trovato con id: " + idPost));
-        return DtoMapper.toPostDtoComplete(post);
+        return enrichWithSondaggio(post, username);
     }
 
     private List<Allegato> salvaFiles(MultipartFile[] files, Post post) {

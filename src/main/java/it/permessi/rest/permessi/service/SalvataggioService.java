@@ -52,7 +52,15 @@ public class SalvataggioService {
         Utente utente = utenteRepo.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Utente non trovato"));
         return repo.findByUtenteOrderBySalvatoAtDesc(utente).stream()
-                .map(s -> DtoMapper.toPostDtoComplete(s.getPost()))
+                .filter(s -> s.getPost() != null)
+                .map(s -> {
+                    try {
+                        return DtoMapper.toPostDtoComplete(s.getPost());
+                    } catch (Exception e) {
+                        return null;
+                    }
+                })
+                .filter(dto -> dto != null)
                 .collect(Collectors.toList());
     }
 }
