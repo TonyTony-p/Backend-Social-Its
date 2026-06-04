@@ -17,7 +17,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     Page<Post> findAllByOrderByDataOraDesc(Pageable pageable);
 
-    @Query(value = "SELECT p FROM Post p WHERE p.dataOra >= :since ORDER BY SIZE(p.likes) DESC",
+    @Query(value = "SELECT p FROM Post p LEFT JOIN p.likes l WHERE p.dataOra >= :since GROUP BY p ORDER BY COUNT(l) DESC",
            countQuery = "SELECT COUNT(p) FROM Post p WHERE p.dataOra >= :since")
     Page<Post> findTrendingPostsSince(@Param("since") LocalDateTime since, Pageable pageable);
 

@@ -164,19 +164,11 @@ public class PostService {
     public PageResponse<PostDto> getTendenze(int size, int page, String username) {
         int safeSize = Math.min(Math.max(size, 1), 60);
         Pageable pageable = PageRequest.of(page, safeSize);
-        org.springframework.data.domain.Page<Post> source;
-        if (page == 0) {
-            LocalDateTime since7 = LocalDateTime.now().minusDays(7);
-            org.springframework.data.domain.Page<Post> page7 = postRepo.findTrendingPostsSince(since7, pageable);
-            if (page7.getContent().size() < safeSize / 2) {
-                source = postRepo.findTrendingPostsSince(LocalDateTime.now().minusDays(30), pageable);
-            } else {
-                source = page7;
-            }
-        } else {
-            source = postRepo.findTrendingPostsSince(LocalDateTime.now().minusDays(30), pageable);
-        }
-        return PageResponse.from(source.map(p -> enrichWithSondaggio(p, username)));
+        LocalDateTime since = LocalDateTime.now().minusDays(30);
+        return PageResponse.from(
+            postRepo.findTrendingPostsSince(since, pageable)
+                    .map(p -> enrichWithSondaggio(p, username))
+        );
     }
 
     @Transactional

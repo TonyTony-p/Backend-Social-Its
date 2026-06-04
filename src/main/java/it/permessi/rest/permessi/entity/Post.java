@@ -1,6 +1,7 @@
 package it.permessi.rest.permessi.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -32,13 +33,15 @@ public class Post {
     private String contenuto;
  
     
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "post", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Commento> commenti = new ArrayList<>();
 
-    
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "post", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Like> likes = new ArrayList<>();
 
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "post", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Allegato> allegati = new ArrayList<>();
 
