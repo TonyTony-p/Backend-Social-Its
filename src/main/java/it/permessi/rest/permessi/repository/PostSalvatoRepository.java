@@ -13,4 +13,9 @@ public interface PostSalvatoRepository extends JpaRepository<PostSalvato, Long> 
     Optional<PostSalvato> findByUtenteAndPost(Utente utente, Post post);
     List<PostSalvato> findByUtente(Utente utente);
     List<PostSalvato> findByUtenteOrderBySalvatoAtDesc(Utente utente);
+    void deleteByPost(Post post);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM PostSalvato ps WHERE ps.post = :post")
+    void bulkDeleteByPost(@org.springframework.data.repository.query.Param("post") Post post);
 }

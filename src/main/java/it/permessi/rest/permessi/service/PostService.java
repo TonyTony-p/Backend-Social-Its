@@ -27,7 +27,13 @@ import it.permessi.rest.permessi.entity.Post;
 import it.permessi.rest.permessi.entity.Utente;
 import it.permessi.rest.permessi.mapper.DtoMapper;
 import it.permessi.rest.permessi.repository.AllegatoRepository;
+import it.permessi.rest.permessi.repository.CommentoRepository;
+import it.permessi.rest.permessi.repository.LikeRepository;
+import it.permessi.rest.permessi.repository.OpzioneRepository;
 import it.permessi.rest.permessi.repository.PostRepository;
+import it.permessi.rest.permessi.repository.PostSalvatoRepository;
+import it.permessi.rest.permessi.repository.SegnalazioneRepository;
+import it.permessi.rest.permessi.repository.SondaggioRepository;
 import it.permessi.rest.permessi.repository.UtenteRepository;
 import it.permessi.rest.permessi.repository.VotoRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -56,6 +62,12 @@ public class PostService {
     @Autowired SegueService segueService;
     @Autowired VotoRepository votoRepo;
     @Autowired SondaggioService sondaggioService;
+    @Autowired PostSalvatoRepository postSalvatoRepo;
+    @Autowired SegnalazioneRepository segnalazioneRepo;
+    @Autowired SondaggioRepository sondaggioRepo;
+    @Autowired OpzioneRepository opzioneRepo;
+    @Autowired LikeRepository likeRepo;
+    @Autowired CommentoRepository commentoRepo;
 
     @Transactional
     public PostDto create(String contenuto, MultipartFile[] files, String sondaggioJson, String username) {
@@ -135,7 +147,9 @@ public class PostService {
         Post existingPost = postRepo.findById(form.getId())
             .orElseThrow(() -> new EntityNotFoundException("Post non trovato con id: " + form.getId()));
 
-        if (!existingPost.getUtente().getUsername().equals(userDetails.getUsername()))
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ADMIN"));
+        if (!existingPost.getUtente().getUsername().equals(userDetails.getUsername()) && !isAdmin)
             throw new SecurityException("Non sei autorizzato a modificare questo post");
 
         if (form.getContenuto() != null && !form.getContenuto().trim().isEmpty())
@@ -149,15 +163,36 @@ public class PostService {
         Post post = postRepo.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Post non trovato con id: " + id));
 
-        if (!post.getUtente().getUsername().equals(userDetails.getUsername()))
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ADMIN"));
+        if (!post.getUtente().getUsername().equals(userDetails.getUsername()) && !isAdmin)
             throw new SecurityException("Non sei autorizzato a eliminare questo post");
 
-        // Elimina i file fisici degli allegati
+        // Eliminazione esplicita nell'ordine corretto (nessuna cascata implicita)
+
+        // 1. Voti sondaggio → dipende da OpzioneSondaggio e Sondaggio
+        if (post.getSondaggio() != null) {
+            votoRepo.bulkDeleteBySondaggio(post.getSondaggio());
+            opzioneRepo.bulkDeleteBySondaggio(post.getSondaggio());
+            sondaggioRepo.bulkDeleteByPost(post);
+        }
+
+        // 2. Like e commenti
+        likeRepo.bulkDeleteByPost(post);
+        commentoRepo.bulkDeleteByPost(post);
+
+        // 3. Allegati: elimina file fisici poi record DB
         if (post.getAllegati() != null) {
             post.getAllegati().forEach(a -> eliminaFileFisico(a.getNomeFile()));
         }
+        allegatoRepo.bulkDeleteByPost(post);
 
-        postRepo.deleteById(id);
+        // 4. PostSalvato e Segnalazioni (tabelle senza cascade)
+        postSalvatoRepo.bulkDeleteByPost(post);
+        segnalazioneRepo.bulkDeleteByPost(post);
+
+        // 5. Post
+        postRepo.deleteById(post.getIdPost());
     }
 
     @Transactional(readOnly = true)
