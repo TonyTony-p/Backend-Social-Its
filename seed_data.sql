@@ -1,15 +1,15 @@
 -- ============================================================
 -- SEED DATA: ITSocial - Utenti Fake
 -- 30 Studenti + 10 Docenti + 10 Classi Corso
--- Password per tutti: 123
--- BCrypt hash: $2b$10$k0BgKCCftshUdVLcjg9HYONqua5ne915tv2SOVOXbJI3PM.6T3ncS
+-- Password per tutti: Password1
+-- BCrypt hash: $2a$10$OQI8JpVyC3OyIUeiVs8BKe0VFm9rwLGKBMUe5JXVwOXyLUGOhVhFu
 -- ============================================================
 -- Ruoli presenti nel DB:
 --   id=1      → 'User'       (studenti)
 --   id=30004  → 'PROFESSORE' (docenti)
 -- ============================================================
 
-SET @pwd = '$2b$10$k0BgKCCftshUdVLcjg9HYONqua5ne915tv2SOVOXbJI3PM.6T3ncS';
+SET @pwd = '$2a$10$OQI8JpVyC3OyIUeiVs8BKe0VFm9rwLGKBMUe5JXVwOXyLUGOhVhFu';
 SET @now = NOW();
 SET @studente_id   = (SELECT id FROM ruoli WHERE nome = 'User');
 SET @professore_id = (SELECT id FROM ruoli WHERE nome = 'PROFESSORE');
