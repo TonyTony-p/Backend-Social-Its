@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import it.permessi.rest.permessi.dto.PageResponse;
 import it.permessi.rest.permessi.dto.PostDto;
 import it.permessi.rest.permessi.dto.PostFormDto;
 import it.permessi.rest.permessi.entity.Allegato;
@@ -26,7 +27,13 @@ import it.permessi.rest.permessi.entity.Post;
 import it.permessi.rest.permessi.entity.Utente;
 import it.permessi.rest.permessi.mapper.DtoMapper;
 import it.permessi.rest.permessi.repository.AllegatoRepository;
+import it.permessi.rest.permessi.repository.CommentoRepository;
+import it.permessi.rest.permessi.repository.LikeRepository;
+import it.permessi.rest.permessi.repository.OpzioneRepository;
 import it.permessi.rest.permessi.repository.PostRepository;
+import it.permessi.rest.permessi.repository.PostSalvatoRepository;
+import it.permessi.rest.permessi.repository.SegnalazioneRepository;
+import it.permessi.rest.permessi.repository.SondaggioRepository;
 import it.permessi.rest.permessi.repository.UtenteRepository;
 import it.permessi.rest.permessi.repository.VotoRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -55,6 +62,12 @@ public class PostService {
     @Autowired SegueService segueService;
     @Autowired VotoRepository votoRepo;
     @Autowired SondaggioService sondaggioService;
+    @Autowired PostSalvatoRepository postSalvatoRepo;
+    @Autowired SegnalazioneRepository segnalazioneRepo;
+    @Autowired SondaggioRepository sondaggioRepo;
+    @Autowired OpzioneRepository opzioneRepo;
+    @Autowired LikeRepository likeRepo;
+    @Autowired CommentoRepository commentoRepo;
 
     @Transactional
     public PostDto create(String contenuto, MultipartFile[] files, String sondaggioJson, String username) {
@@ -89,11 +102,12 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public List<PostDto> listAll(String username, int page, int size) {
+    public PageResponse<PostDto> listAll(String username, int page, int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
-        return postRepo.findAllByOrderByDataOraDesc(pageable).stream()
-                .map(p -> enrichWithSondaggio(p, username))
-                .collect(Collectors.toList());
+        return PageResponse.from(
+            postRepo.findAllByOrderByDataOraDesc(pageable)
+                    .map(p -> enrichWithSondaggio(p, username))
+        );
     }
 
     private PostDto enrichWithSondaggio(Post p, String username) {
@@ -133,7 +147,9 @@ public class PostService {
         Post existingPost = postRepo.findById(form.getId())
             .orElseThrow(() -> new EntityNotFoundException("Post non trovato con id: " + form.getId()));
 
-        if (!existingPost.getUtente().getUsername().equals(userDetails.getUsername()))
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ADMIN"));
+        if (!existingPost.getUtente().getUsername().equals(userDetails.getUsername()) && !isAdmin)
             throw new SecurityException("Non sei autorizzato a modificare questo post");
 
         if (form.getContenuto() != null && !form.getContenuto().trim().isEmpty())
@@ -147,39 +163,47 @@ public class PostService {
         Post post = postRepo.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Post non trovato con id: " + id));
 
-        if (!post.getUtente().getUsername().equals(userDetails.getUsername()))
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ADMIN"));
+        if (!post.getUtente().getUsername().equals(userDetails.getUsername()) && !isAdmin)
             throw new SecurityException("Non sei autorizzato a eliminare questo post");
 
-        // Elimina i file fisici degli allegati
+        // Eliminazione esplicita nell'ordine corretto (nessuna cascata implicita)
+
+        // 1. Voti sondaggio → dipende da OpzioneSondaggio e Sondaggio
+        if (post.getSondaggio() != null) {
+            votoRepo.bulkDeleteBySondaggio(post.getSondaggio());
+            opzioneRepo.bulkDeleteBySondaggio(post.getSondaggio());
+            sondaggioRepo.bulkDeleteByPost(post);
+        }
+
+        // 2. Like e commenti
+        likeRepo.bulkDeleteByPost(post);
+        commentoRepo.bulkDeleteByPost(post);
+
+        // 3. Allegati: elimina file fisici poi record DB
         if (post.getAllegati() != null) {
             post.getAllegati().forEach(a -> eliminaFileFisico(a.getNomeFile()));
         }
+        allegatoRepo.bulkDeleteByPost(post);
 
-        postRepo.deleteById(id);
+        // 4. PostSalvato e Segnalazioni (tabelle senza cascade)
+        postSalvatoRepo.bulkDeleteByPost(post);
+        segnalazioneRepo.bulkDeleteByPost(post);
+
+        // 5. Post
+        postRepo.deleteById(post.getIdPost());
     }
 
     @Transactional(readOnly = true)
-    public List<PostDto> getTendenze(int size, int page) {
+    public PageResponse<PostDto> getTendenze(int size, int page, String username) {
         int safeSize = Math.min(Math.max(size, 1), 60);
         Pageable pageable = PageRequest.of(page, safeSize);
-        if (page == 0) {
-            LocalDateTime since7 = LocalDateTime.now().minusDays(7);
-            List<PostDto> risultati = postRepo.findTrendingPostsSince(since7, pageable).stream()
-                    .map(DtoMapper::toPostDtoForTendenze)
-                    .collect(Collectors.toList());
-            if (risultati.size() < safeSize / 2) {
-                LocalDateTime since30 = LocalDateTime.now().minusDays(30);
-                risultati = postRepo.findTrendingPostsSince(since30, pageable).stream()
-                        .map(DtoMapper::toPostDtoForTendenze)
-                        .collect(Collectors.toList());
-            }
-            return risultati;
-        }
-        // Pagine successive: finestra fissa 30 giorni
-        LocalDateTime since30 = LocalDateTime.now().minusDays(30);
-        return postRepo.findTrendingPostsSince(since30, pageable).stream()
-                .map(DtoMapper::toPostDtoForTendenze)
-                .collect(Collectors.toList());
+        LocalDateTime since = LocalDateTime.now().minusDays(30);
+        return PageResponse.from(
+            postRepo.findTrendingPostsSince(since, pageable)
+                    .map(p -> enrichWithSondaggio(p, username))
+        );
     }
 
     @Transactional
@@ -198,20 +222,22 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public List<PostDto> getPostDaSeguiti(String username, int page, int size) {
+    public PageResponse<PostDto> getPostDaSeguiti(String username, int page, int size) {
         List<String> usernames = segueService.getSeguitiUsernames(username);
-        if (usernames.isEmpty()) return List.of();
-        Pageable pageable = PageRequest.of(page, Math.min(size, 50));
-        return postRepo.findByUtenteUsernameIn(usernames, pageable).getContent().stream()
-                .map(p -> enrichWithSondaggio(p, username))
-                .collect(Collectors.toList());
+        int safeSize = Math.min(size, 50);
+        if (usernames.isEmpty()) return PageResponse.empty(page, safeSize);
+        Pageable pageable = PageRequest.of(page, safeSize);
+        return PageResponse.from(
+            postRepo.findByUtenteUsernameIn(usernames, pageable)
+                    .map(p -> enrichWithSondaggio(p, username))
+        );
     }
 
     @Transactional(readOnly = true)
-    public PostDto postById(Long idPost) {
+    public PostDto postById(Long idPost, String username) {
         Post post = postRepo.findById(idPost)
             .orElseThrow(() -> new EntityNotFoundException("Post non trovato con id: " + idPost));
-        return DtoMapper.toPostDtoComplete(post);
+        return enrichWithSondaggio(post, username);
     }
 
     private List<Allegato> salvaFiles(MultipartFile[] files, Post post) {

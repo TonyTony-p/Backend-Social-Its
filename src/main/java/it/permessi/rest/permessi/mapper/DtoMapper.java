@@ -266,6 +266,9 @@ public class DtoMapper {
                 .map(DtoMapper::toCommentoDtoLight)
                 .collect(Collectors.toList());
             dto.setCommenti(commentiDtos);
+            dto.setNumeroCommenti(p.getCommenti().size());
+        } else {
+            dto.setNumeroCommenti(0);
         }
 
         if (p.getAllegati() != null && !p.getAllegati().isEmpty()) {
@@ -431,11 +434,14 @@ public class DtoMapper {
     }
 
     public static CommentoDto toCommentoDtoLight(Commento c) {
+        if (c == null) return null;
         CommentoDto dto = new CommentoDto();
         dto.setIdCommento(c.getIdCommento());
         dto.setTesto(c.getTesto());
         dto.setDataOra(c.getDataOra());
-        dto.setUtente(toUtenteDtoLight(c.getUtente()));
+        try {
+            dto.setUtente(toUtenteDtoLight(c.getUtente()));
+        } catch (Exception ignored) {}
         return dto;
     }
 

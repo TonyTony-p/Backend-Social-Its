@@ -26,6 +26,17 @@ public class PageResponse<T> {
         return dto;
     }
 
+    public static <T> PageResponse<T> empty(int page, int size) {
+        PageResponse<T> dto = new PageResponse<>();
+        dto.setContenuto(List.of());
+        dto.setNumeroPagina(page);
+        dto.setDimensionePagina(size);
+        dto.setTotaleElementi(0);
+        dto.setTotalePagine(0);
+        dto.setUltima(true);
+        return dto;
+    }
+
     public List<T> getContenuto() { return contenuto; }
     public void setContenuto(List<T> contenuto) { this.contenuto = contenuto; }
     public int getNumeroPagina() { return numeroPagina; }

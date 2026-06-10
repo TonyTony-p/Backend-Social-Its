@@ -15,4 +15,10 @@ public interface VotoRepository extends JpaRepository<VotoSondaggio, Long> {
 
     @Query("SELECT v.opzione.idOpzione FROM VotoSondaggio v WHERE v.utente.username = :username AND v.sondaggio.idSondaggio = :sondaggioId")
     Long findIdOpzioneByUsernameAndSondaggioId(@Param("username") String username, @Param("sondaggioId") Long sondaggioId);
+
+    void deleteBySondaggio(Sondaggio sondaggio);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM VotoSondaggio v WHERE v.sondaggio = :sondaggio")
+    void bulkDeleteBySondaggio(@org.springframework.data.repository.query.Param("sondaggio") Sondaggio sondaggio);
 }
